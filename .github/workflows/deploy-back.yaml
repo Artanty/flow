@@ -34,8 +34,8 @@ jobs:
       #     echo "Response: $RESPONSE"
       #     echo "response=$RESPONSE" >> $GITHUB_OUTPUT
 
-      - name: Deploy Stage
-        id: myRequest
+      - name: Make request to @safe db
+        id: safe
         uses: Artanty/http-request-action@main
         with:
           url: 'https://cs99850.tmweb.ru/safe/get'
@@ -43,72 +43,56 @@ jobs:
           customHeaders: '{"Content-Type": "application/json"}'
           data: '{"projectId": "${{ steps.extract_repo_part.outputs.repo_part }}@github", "stage": "DEPLOY"}'
       
-      - name: Show Response
+      - name: Check for TARGET_VERCEL_JSON in response
+        id: check_vercel_json
         run: |
-          echo ${{ steps.myRequest.outputs.response }}
-          echo ${{ steps.myRequest.outputs.headers }}
-          echo ${{ steps.myRequest.outputs.status }}
-          echo ${{ fromJson(steps.myRequest.outputs.response).data.GIT_PAT }}
-          echo ${{ fromJson(steps.myRequest.outputs.response).data.GIT_LOGIN }}
-          echo ${{ fromJson(steps.myRequest.outputs.response).data.GIT_REPO }}
-      
-      # - name: Check for TARGET_VERCEL_JSON in response
-      #   id: check_vercel_json
-      #   run: |
-      #     JSON="${{ fromJson(steps.send_post_request.outputs.response).data.TARGET_VERCEL_JSON }}"
-      #     if [ -n "$JSON" ]; then
-      #       echo "vercel_json_present=true" >> $GITHUB_OUTPUT
-      #     else
-      #       echo "vercel_json_present=false" >> $GITHUB_OUTPUT
-      #     fi
+          JSON="${{ fromJson(steps.safe.outputs.response).data.TARGET_VERCEL_JSON }}"
+          if [ -n "$JSON" ]; then
+            echo "vercel_json_present=true" >> $GITHUB_OUTPUT
+          else
+            echo "vercel_json_present=false" >> $GITHUB_OUTPUT
+          fi
 
-      # - name: Create vercel.json file if TARGET_VERCEL_JSON is present
-      #   if: steps.check_vercel_json.outputs.vercel_json_present == 'true'
-      #   run: |
-      #     SOURCE="${{ fromJson(steps.send_post_request.outputs.response).data.TARGET_VERCEL_JSON }}"
-      #     JSON='{
-      #       "version": 2,
-      #       "builds": [
-      #         {
-      #           "src": "'"$SOURCE"'",
-      #           "use": "@vercel/node"
-      #         }
-      #       ],
-      #       "routes": [
-      #         {
-      #           "src": "/(.*)",
-      #           "dest": "'"$SOURCE"'"
-      #         }
-      #       ],
-      #       "installCommand": "npm install"
-      #     }'
-      #     echo "$JSON" > vercel.json
+      - name: Create vercel.json file if TARGET_VERCEL_JSON is present
+        if: steps.check_vercel_json.outputs.vercel_json_present == 'true'
+        run: |
+          SOURCE="${{ fromJson(steps.safe.outputs.response).data.TARGET_VERCEL_JSON }}"
+          JSON='{
+            "version": 2,
+            "builds": [
+              {
+                "src": "'"$SOURCE"'",
+                "use": "@vercel/node"
+              }
+            ],
+            "routes": [
+              {
+                "src": "/(.*)",
+                "dest": "'"$SOURCE"'"
+              }
+            ],
+            "installCommand": "npm install"
+          }'
+          echo "$JSON" > vercel.json
 
-      # - name: Remove .env from .gitignore
-      #   run: |
-      #     sed -i '/^\.env$/d' .gitignore
+      - name: Remove .env from .gitignore
+        run: |
+          sed -i '/^\.env$/d' .gitignore
 
-      # # - name: Create configuration file
-      # #   run: |
-      # #     echo "APP_ID=${{ fromJson(steps.send_post_request.outputs.response).data.APP_ID }}
-      # #     WEBHOOK_SECRET=${{ fromJson(steps.send_post_request.outputs.response).data.WEBHOOK_SECRET }}
-      # #     PRIVATE_KEY=${{ fromJson(steps.send_post_request.outputs.response).data.PRIVATE_KEY }}
-      # #     SECRET_URL=${{ fromJson(steps.send_post_request.outputs.response).data.SECRET_URL }}" > .env
+      - name: Set environment variables and push to another repository
+        run: |
+          echo "TARGET_GIT_TOKEN=${{ fromJson(steps.safe.outputs.response).data.GIT_PAT }}" >> $GITHUB_ENV
+          echo "TARGET_GIT_USER=${{ fromJson(steps.safe.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
+          echo "TARGET_GIT_REPO=${{ fromJson(steps.safe.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
 
-      # - name: Set environment variables and push to another repository
-      #   run: |
-      #     echo "TARGET_GIT_TOKEN=${{ fromJson(steps.send_post_request.outputs.response).data.GIT_PAT }}" >> $GITHUB_ENV
-      #     echo "TARGET_GIT_USER=${{ fromJson(steps.send_post_request.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
-      #     echo "TARGET_GIT_REPO=${{ fromJson(steps.send_post_request.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
-
-      # - name: Pushes to another repository
-      #   uses: cpina/github-action-push-to-another-repository@main
-      #   env:
-      #     API_TOKEN_GITHUB: ${{ env.TARGET_GIT_TOKEN }}
-      #   with:
-      #     source-directory: '.'
-      #     destination-github-username: ${{ env.TARGET_GIT_USER }}
-      #     destination-repository-name: ${{ env.TARGET_GIT_REPO }}
-      #     user-email: carles3@pina.cat
-      #     target-branch: main
-      #     exclude-files: '.env'
+      - name: Pushes to another repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ env.TARGET_GIT_TOKEN }}
+        with:
+          source-directory: '.'
+          destination-github-username: ${{ env.TARGET_GIT_USER }}
+          destination-repository-name: ${{ env.TARGET_GIT_REPO }}
+          user-email: carles3@pina.cat
+          target-branch: main
+          exclude-files: '.env'
