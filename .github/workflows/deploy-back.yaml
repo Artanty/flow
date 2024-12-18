@@ -28,11 +28,19 @@ jobs:
       - name: Send POST request
         id: send_post_request
         run: |
-          RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" \
           -d "{\"projectId\":\"${{ steps.extract_repo_part.outputs.repo_part }}@github\",\"state\":\"DEPLOY\"}" \
           https://cs99850.tmweb.ru/safe/get)
-          echo "Response: $RESPONSE"
-          echo "response=$RESPONSE" >> $GITHUB_OUTPUT
+          
+          echo "HTTP Status Code: $RESPONSE"
+          
+          if [ "$RESPONSE" -ge 400 ]; then
+            echo "Error: Received HTTP status code $RESPONSE"
+            exit 1
+          else
+            echo "Response: Success"
+            echo "response=Success" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check for TARGET_VERCEL_JSON in response
         id: check_vercel_json
