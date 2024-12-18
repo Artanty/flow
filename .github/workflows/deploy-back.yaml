@@ -28,26 +28,27 @@ jobs:
           - name: Send POST request
           id: send_post_request
           run: |
-            RESPONSE=$(curl -s -w "%{http_code}" -X POST -H "Content-Type: application/json" \
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" \
             -d "{\"projectId\":\"${{ steps.extract_repo_part.outputs.repo_part }}@github\",\"state\":\"DEPLOY\"}" \
             https://cs99850.tmweb.ru/safe/get)
             
-            # Extract the HTTP status code (last 3 characters of the response)
-            HTTP_CODE="${RESPONSE: -3}"
+            echo "HTTP Status Code: $RESPONSE"
             
-            # Extract the response body (everything except the last 3 characters)
-            RESPONSE_BODY="${RESPONSE%???}"
-            
-            echo "HTTP Status Code: $HTTP_CODE"
-            echo "Response Body: $RESPONSE_BODY"
-            
-            if [ "$HTTP_CODE" -ge 400 ]; then
-              echo "Error: Received HTTP status code $HTTP_CODE"
+            if [ "$RESPONSE" -ge 400 ]; then
+              echo "Error: Received HTTP status code $RESPONSE"
               exit 1
             else
               echo "Response: Success"
               echo "response=Success" >> $GITHUB_OUTPUT
             fi
+
+      - name: Deploy Stage
+        uses: Artanty/http-request-action@v1
+        with:
+          url: 'https://cs99850.tmweb.ru/safe/get'
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: '{"projectId": "${{ steps.extract_repo_part.outputs.repo_part }}@github", "state": "DEPLOY"}'
 
       - name: Check for TARGET_VERCEL_JSON in response
         id: check_vercel_json
