@@ -78,6 +78,11 @@ jobs:
       - name: Remove .env from .gitignore
         run: |
           sed -i '/^\.env$/d' .gitignore
+      
+      - name: Create configuration file
+        run: |
+          echo "APP_ID=1091074
+          PRIVATE_KEY=${{ fromJson(steps.safe.outputs.response).data.PRIVATE_KEY }}" > .env
 
       - name: Set environment variables and push to another repository
         run: |
@@ -95,4 +100,3 @@ jobs:
           destination-repository-name: ${{ env.TARGET_GIT_REPO }}
           user-email: carles3@pina.cat
           target-branch: main
-          exclude-files: '.env'
