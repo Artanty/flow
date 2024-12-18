@@ -19,31 +19,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
      
-      - name: Extract part of repository name
-        id: extract_repo_part
-        run: |
-          REPO_PART=${GITHUB_REPOSITORY##*/}
-          echo "repo_part=$REPO_PART" >> $GITHUB_OUTPUT
+      # - name: Extract part of repository name
+      #   id: extract_repo_part
+      #   run: |
+      #     REPO_PART=${GITHUB_REPOSITORY##*/}
+      #     echo "repo_part=$REPO_PART" >> $GITHUB_OUTPUT
 
-          - name: Send POST request
-          id: send_post_request
-          run: |
-            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" \
-            -d "{\"projectId\":\"${{ steps.extract_repo_part.outputs.repo_part }}@github\",\"state\":\"DEPLOY\"}" \
-            https://cs99850.tmweb.ru/safe/get)
+      #     - name: Send POST request
+      #     id: send_post_request
+      #     run: |
+      #       RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" \
+      #       -d "{\"projectId\":\"${{ steps.extract_repo_part.outputs.repo_part }}@github\",\"state\":\"DEPLOY\"}" \
+      #       https://cs99850.tmweb.ru/safe/get)
             
-            echo "HTTP Status Code: $RESPONSE"
+      #       echo "HTTP Status Code: $RESPONSE"
             
-            if [ "$RESPONSE" -ge 400 ]; then
-              echo "Error: Received HTTP status code $RESPONSE"
-              exit 1
-            else
-              echo "Response: Success"
-              echo "response=Success" >> $GITHUB_OUTPUT
-            fi
+      #       if [ "$RESPONSE" -ge 400 ]; then
+      #         echo "Error: Received HTTP status code $RESPONSE"
+      #         exit 1
+      #       else
+      #         echo "Response: Success"
+      #         echo "response=Success" >> $GITHUB_OUTPUT
+      #       fi
 
       - name: Deploy Stage
-        uses: Artanty/http-request-action@v1
+        uses: Artanty/http-request-action@main
         with:
           url: 'https://cs99850.tmweb.ru/safe/get'
           method: 'POST'
