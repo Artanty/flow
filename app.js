@@ -9,7 +9,7 @@ import fs from "fs";
 import http from "http";
 dotenv.config();
 // const app = express();
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 
 // GitHub App credentials
 const APP_ID = process.env.APP_ID;
