@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Extract part of repository name
         id: extract_repo_part
@@ -90,14 +90,14 @@ jobs:
           echo "TARGET_GIT_USER=${{ fromJson(steps.safe.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
           echo "TARGET_GIT_REPO=${{ fromJson(steps.safe.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
       
-      - name: Install sudo
-        run: |
-          apk add --no-cache sudo
+      # - name: Install sudo
+      #   run: |
+      #     apk add --no-cache sudo
 
-      - name: Install Git
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y git
+      # - name: Install Git
+      #   run: |
+      #     sudo apt-get update -y
+      #     sudo apt-get install -y git
 
       - name: Setup git config email
         run: |
