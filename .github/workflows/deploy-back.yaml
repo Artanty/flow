@@ -42,8 +42,8 @@ jobs:
           method: 'POST'
           customHeaders: '{"Content-Type": "application/json"}'
           data: '{"projectId": "${{ steps.extract_repo_part.outputs.repo_part }}@github", "stage": "DEPLOY"}'
-          retry: 2
-          retryWait: 3000
+          retry: 5
+          retryWait: 5000
       
           
       - name: Show Response
