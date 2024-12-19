@@ -35,7 +35,7 @@ async function handlePullRequestOpened({octokit, payload}) {
 
 app2.webhooks.on("pull_request.opened", handlePullRequestOpened);
 
-const middleware = createNodeMiddleware(app.webhooks, {path});
+const middleware = createNodeMiddleware(app2.webhooks, {path});
 
 http.createServer(middleware).listen(PORT, () => {
   
