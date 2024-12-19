@@ -90,7 +90,7 @@ jobs:
           echo "TARGET_GIT_USER=${{ fromJson(steps.safe.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
           echo "TARGET_GIT_REPO=${{ fromJson(steps.safe.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
 
-      - name: Setup git config
+      - name: Setup git config email
         run: |
           git config --global user.email "onarlandlord@gmail.com"
 
