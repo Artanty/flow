@@ -44,6 +44,11 @@ jobs:
           data: '{"projectId": "${{ steps.extract_repo_part.outputs.repo_part }}@github", "stage": "DEPLOY"}'
           retry: 2
       
+          
+      - name: Show Response
+        run: |
+          echo ${{ steps.myRequest.outputs.response }}
+        
       - name: Check for TARGET_VERCEL_JSON in response
         id: check_vercel_json
         run: |
