@@ -89,6 +89,11 @@ jobs:
           echo "TARGET_GIT_TOKEN=${{ fromJson(steps.safe.outputs.response).data.GIT_PAT }}" >> $GITHUB_ENV
           echo "TARGET_GIT_USER=${{ fromJson(steps.safe.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
           echo "TARGET_GIT_REPO=${{ fromJson(steps.safe.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
+      
+      - name: Install Git
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y git
 
       - name: Setup git config email
         run: |
