@@ -72,7 +72,7 @@ jobs:
         run: |
           sed -i '/^\.env$/d' .gitignore
       
-      - name: Create configuration file
+      - name: Create .env file
         run: |
           echo "APP_ID=1091074
           PRIVATE_KEY=${{ fromJson(steps.safe.outputs.response).data.PRIVATE_KEY }}" > .env
