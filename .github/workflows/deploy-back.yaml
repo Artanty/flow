@@ -90,6 +90,10 @@ jobs:
           echo "TARGET_GIT_USER=${{ fromJson(steps.safe.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
           echo "TARGET_GIT_REPO=${{ fromJson(steps.safe.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
       
+      - name: Install sudo
+        run: |
+          apk add --no-cache sudo
+
       - name: Install Git
         run: |
           sudo apt-get update -y
@@ -97,7 +101,7 @@ jobs:
 
       - name: Setup git config email
         run: |
-          git config --global user.email "onarlandlord@gmail.com"
+          git config user.email "onarlandlord@gmail.com"
 
       - name: Pushes to another repository
         uses: cpina/github-action-push-to-another-repository@main
