@@ -1,10 +1,10 @@
-const dotenv = require('dotenv');
-const express = require('express');
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
-const { Octokit } = require('@octokit/rest');
+import dotenv from 'dotenv';
+import express from 'express';
+import bodyParser from 'body-parser';
+import crypto from 'crypto';
+import { Octokit } from '@octokit/rest';
 
-dotenv.config()
+dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 
