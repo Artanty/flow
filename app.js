@@ -23,7 +23,7 @@ const octokit = new Octokit({
 });
 
 
-async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_url) {
+async function triggerWorkflow(namespace, repo_name, commit_message, pat) {
 
   await octokit.actions.createWorkflowDispatch({
     owner: 'Artanty', // Replace with the target repository owner
@@ -34,7 +34,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
       repo_name: repo_name,
       commit_message: commit_message,
       pat: pat,
-      safe_url: safe_url,
+      safe_url: process.env.SAFE_URL,
       namespace: namespace,
     },
   });
@@ -80,8 +80,7 @@ app.post('/webhook', async (req, res) => {
         namespace === 'root' ? '' : namespace,
         repo_name,
         req.body.head_commit.message,
-        APP_GIT_PAT,
-        process.env.SAFE_URL
+        APP_GIT_PAT
       );
     }
 
