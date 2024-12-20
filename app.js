@@ -34,13 +34,12 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat) {
       repo_name: repo_name,
       commit_message: commit_message,
       pat: pat,
-      safe_url: 'process.env.SAFE_URL',
+      safe_url: process.env.SAFE_URL,
       namespace: namespace,
     },
   });
 }
 app.post('/test', async (req, res) => {
-  console.log(process.env.SAFE_URL)
   res.status(200).send(process.env.SAFE_URL);
 })
 app.post('/webhook', async (req, res) => {
