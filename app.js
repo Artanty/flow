@@ -39,7 +39,10 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
     },
   });
 }
-
+app.post('/test', async (req, res) => {
+  console.log(process.env.SAFE_URL)
+  res.status(200).send(process.env.SAFE_URL);
+})
 app.post('/webhook', async (req, res) => {
   console.log(process.env.SAFE_URL)
   const repo_name = req.body.repository.name;
