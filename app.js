@@ -3,7 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
-import {App} from "octokit";
+
 dotenv.config();
 const app = express();
 app.use(bodyParser.json());
@@ -18,8 +18,15 @@ app.post('/webhook', async (req, res) => {
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', PRIVATE_KEY).update(payload).digest('hex');
+  
+  console.log('local PRIVATE_KEY')
+  console.log(PRIVATE_KEY)
+  console.log('hmac')
+  console.log(hmac)
   const calculatedSignature = `sha256=${hmac}`;
-  console.log(payload)
+  console.log("signature req.headers['x-hub-signature-256']")
+  console.log(signature)
+
   if (signature !== calculatedSignature) {
     return res.status(401).send('Invalid signature');
   }
