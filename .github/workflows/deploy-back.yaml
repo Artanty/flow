@@ -34,7 +34,7 @@ jobs:
           customHeaders: '{"Content-Type": "application/json"}'
           data: '{"projectId": "${{ steps.extract_repo_part.outputs.repo_part }}@github", "stage": "DEPLOY"}'
           retry: 5
-          retryWait: 15000
+          retryWait: 100
           timeout: 30000
         
       - name: Check for TARGET_VERCEL_JSON in response
