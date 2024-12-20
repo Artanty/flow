@@ -80,7 +80,7 @@ jobs:
           APP_GIT_PAT=${{ fromJson(steps.safe.outputs.response).data.APP_GIT_PAT }}
           APP_CLIENT_ID=${{ fromJson(steps.safe.outputs.response).data.APP_CLIENT_ID }}
           APP_CLIENT_SECRET=${{ fromJson(steps.safe.outputs.response).data.APP_CLIENT_SECRET }}
-          SAFE_URL=${{ env.SAFE_URL }}
+          SAFE_URL=${{ secrets.SAFE_URL }}
           APP_PRIVATE_KEY=${{ fromJson(steps.safe.outputs.response).data.APP_PRIVATE_KEY }}" > .env
 
       - name: Set environment variables and push to another repository
