@@ -20,38 +20,32 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT
  * состоит из:
  * const hmac = crypto.createHmac('sha256', 'your-webhook-secret').update(payload).digest('hex');
  */
-// Verify webhook signature
 app.post('/webhook', async (req, res) => {
-  const eventType = req.headers['x-github-event']
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
   const calculatedSignature = `sha256=${hmac}`;
+  const eventType = req.headers['x-github-event']
 
   if (signature !== calculatedSignature) {
     return res.status(401).send('Invalid signature');
   }
 
-  // Handle push event
   if (eventType === 'push' && req.body.ref === 'refs/heads/master') {
-    const installationId = req.body.installation.id;
-    const repo = req.body.repository.full_name;
 
     const octokit = new Octokit({
       auth: APP_GIT_PAT,
     });
 
-    console.log('octokit')
-    console.log(octokit)
-
-    // Trigger workflow in the target repository
     await octokit.actions.createWorkflowDispatch({
       owner: 'Artanty', // Replace with the target repository owner
       repo: 'serf',   // Replace with the target repository name
-      workflow_id: 'log.yaml', // Replace with the workflow file name
+      workflow_id: 'deploy.yaml', // Replace with the workflow file name
       ref: 'master', // Replace with the branch name in the target repository
       inputs: {
-        source_repo: repo, // Pass the source repository as an input
+        repo: req.body.repository.full_name, // Pass the source repository as an input
+        pat: APP_GIT_PAT,
+        safe: process.env.SAFE_URL,
       },
     });
 
