@@ -37,14 +37,12 @@ async function handlePullRequestOpened({octokit, payload}) {
       source_repo: repo, // Pass the source repository as an input
     },
   });
-
-  // res.status(200).send('Workflow triggered');
 };
 
-app.webhooks.on("push", handlePullRequestOpened);
+octokitApp.webhooks.on("push", handlePullRequestOpened);
 
 // This logs any errors that occur.
-app.webhooks.onError((error) => {
+octokitApp.webhooks.onError((error) => {
   if (error.name === "AggregateError") {
     console.error(`Error processing request: ${error.event}`);
   } else {
