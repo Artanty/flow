@@ -38,6 +38,10 @@ app.post('/webhook', async (req, res) => {
     return res.status(401).send('Invalid signature');
   }
 
+  console.log('req.body.action')
+  console.log(req.body.action)
+  console.log('req.body.ref')
+  console.log(req.body.ref)
   // Handle push event
   if (req.body.action === 'push' && req.body.ref === 'refs/heads/master') {
     const installationId = req.body.installation.id;
