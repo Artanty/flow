@@ -55,7 +55,7 @@ app.post('/webhook', async (req, res) => {
     console.log(octokit)
 
     // Trigger workflow in the target repository
-    await octokit.actions.createWorkflowDispatch({
+    await octokit.octokit.actions.createWorkflowDispatch({
       owner: 'Artanty', // Replace with the target repository owner
       repo: 'serf',   // Replace with the target repository name
       workflow_id: 'log.yaml', // Replace with the workflow file name

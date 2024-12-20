@@ -339,6 +339,110 @@ for await (const { octokit, repository } of app.eachRepository.iterator()) {}
     codeScanning: { octokit: [Circular *1], scope: 'codeScann
 ```
 
+### AppWithDefaults
+creation:
+```
+const octokit = new App({
+      appId: APP_ID,
+      privateKey: PRIVATE_KEY,
+      webhooks: {
+        secret: WEBHOOK_SECRET
+      },
+    })
+```
+result:
+```
+AppWithDefaults {
+  octokit: OctokitWithDefaults {
+    request: [Function: newApi] {
+      endpoint: [Function],
+      defaults: [Function: bound withDefaults]
+    },
+    graphql: [Function: newApi] {
+      defaults: [Function: bound withDefaults],
+      endpoint: [Function],
+      paginate: [AsyncFunction]
+    },
+    log: {
+      debug: [Function: noop],
+      info: [Function: noop],
+      warn: [Function: bound bound ],
+      error: [Function: bound bound ]
+    },
+    hook: [Function: bound register] {
+      api: [Object],
+      remove: [Function: bound removeHook],
+      before: [Function: bound addHook],
+      error: [Function: bound addHook],
+      after: [Function: bound addHook],
+      wrap: [Function: bound addHook]
+    },
+    auth: [Function: bound auth] AsyncFunction {
+      hook: [Function: bound hook] AsyncFunction
+    },
+    rest: {
+      actions: [Object],
+      activity: [Object],
+      apps: [Object],
+      billing: [Object],
+      checks: [Object],
+      codeScanning: [Object],
+      codesOfConduct: [Object],
+      codespaces: [Object],
+      copilot: [Object],
+      dependabot: [Object],
+      dependencyGraph: [Object],
+      emojis: [Object],
+      gists: [Object],
+      git: [Object],
+      gitignore: [Object],
+      interactions: [Object],
+      issues: [Object],
+      licenses: [Object],
+      markdown: [Object],
+      meta: [Object],
+      migrations: [Object],
+      orgs: [Object],
+      packages: [Object],
+      projects: [Object],
+      pulls: [Object],
+      rateLimit: [Object],
+      reactions: [Object],
+      repos: [Object],
+      search: [Object],
+      secretScanning: [Object],
+      securityAdvisories: [Object],
+      teams: [Object],
+      users: [Object]
+    },
+    paginate: [Function: bound paginate] { iterator: [Function: bound iterator] },
+    retry: { retryRequest: [Function: retryRequest] }
+  },
+  log: {
+    debug: [Function: debug],
+    info: [Function: info],
+    warn: [Function: bound bound ],
+    error: [Function: bound bound ]
+  },
+  webhooks: Webhooks {
+    sign: [Function: bound sign] AsyncFunction,
+    verify: [Function: bound verify] AsyncFunction,
+    on: [Function: bound receiverOn],
+    onAny: [Function: bound receiverOnAny],
+    onError: [Function: bound receiverOnError],
+    removeListener: [Function: bound removeListener],
+    receive: [Function: bound receiverHandle],
+    verifyAndReceive: [Function: bound verifyAndReceive] AsyncFunction
+  },
+  getInstallationOctokit: [Function: bound getInstallationOctokit] AsyncFunction,
+  eachInstallation: [Function: bound eachInstallation] AsyncFunction {
+    iterator: [Function: bound eachInstallationIterator]
+  },
+  eachRepository: [Function: bound eachRepository] AsyncFunction {
+    iterator: [Function: bound eachRepositoryIterator]
+  }
+}
+```
 ### Octokit interface
 ```
 export declare class App<TOptions extends Options = Options> {
