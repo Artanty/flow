@@ -22,7 +22,6 @@ const octokit = new Octokit({
   auth: APP_GIT_PAT,
 });
 
-
 async function triggerWorkflow(namespace, repo_name, commit_message, pat) {
 
   await octokit.actions.createWorkflowDispatch({
@@ -39,6 +38,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat) {
     },
   });
 }
+
 app.post('/test', async (req, res) => {
   res.status(200).send(process.env.SAFE_URL);
 })
