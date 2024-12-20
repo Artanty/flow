@@ -32,17 +32,7 @@ app.post('/webhook', async (req, res) => {
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
-  
-  console.log('local PRIVATE_KEY')
-  console.log(PRIVATE_KEY)
-  
   const calculatedSignature = `sha256=${hmac}`;
-
-  console.log('calculatedSignature - контрольная сумма, посчитанная локально')
-  console.log(calculatedSignature)
-
-  console.log("signature - контрольная сумма, которая приходит в хэдере")
-  console.log(signature)
 
   if (signature !== calculatedSignature) {
     return res.status(401).send('Invalid signature');
@@ -53,10 +43,18 @@ app.post('/webhook', async (req, res) => {
     const installationId = req.body.installation.id;
     const repo = req.body.repository.full_name;
 
+    console.log('installationId')
+    console.log(installationId)
+    console.log('repo')
+    console.log(repo)
+
     // Authenticate as the GitHub App
     const octokit = new Octokit({
       auth: `Bearer ${await getInstallationAccessToken(installationId)}`,
     });
+
+    console.log('octokit')
+    console.log(octokit)
 
     // Trigger workflow in the target repository
     await octokit.actions.createWorkflowDispatch({
@@ -82,6 +80,8 @@ async function getInstallationAccessToken(installationId) {
   const { token } = await octokit.apps.createInstallationAccessToken({
     installation_id: installationId,
   });
+  console.log('token')
+  console.log(token)
   return token;
 }
 
