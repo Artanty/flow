@@ -73,6 +73,11 @@ jobs:
         run: |
           sed -i '/^\.env$/d' .gitignore
       
+      - name: Use secret as environment variable
+        env:
+          SAFE_URL: ${{ secrets.SAFE_URL }}
+        run: echo "The secret URL is $SAFE_URL"
+
       - name: Create .env file
         run: |
           echo "APP_ID=${{ fromJson(steps.safe.outputs.response).data.APP_ID }}
@@ -80,8 +85,8 @@ jobs:
           APP_GIT_PAT=${{ fromJson(steps.safe.outputs.response).data.APP_GIT_PAT }}
           APP_CLIENT_ID=${{ fromJson(steps.safe.outputs.response).data.APP_CLIENT_ID }}
           APP_CLIENT_SECRET=${{ fromJson(steps.safe.outputs.response).data.APP_CLIENT_SECRET }}
-          SAFE_URL=${{ secrets.SAFE_URL }}
           APP_PRIVATE_KEY=${{ fromJson(steps.safe.outputs.response).data.APP_PRIVATE_KEY }}" > .env
+          echo "SAFE_URL=${{ secrets.SAFE_URL }}" >> .env
 
       - name: Set environment variables and push to another repository
         run: |
