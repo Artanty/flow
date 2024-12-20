@@ -12,19 +12,36 @@ app.use(bodyParser.json());
 const APP_ID = process.env.APP_ID;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const PORT = process.env.PORT || 3000;
+const WEBHOOK_SECRET = 'mysecret'
 
+/**
+ * req.headers['x-hub-signature-256'] - контрольная сумма payload'а.
+ * состоит из:
+ * const hmac = crypto.createHmac('sha256', 'your-webhook-secret').update(payload).digest('hex');
+ */
+app.post('/test', async (req, res) => {
+  // console.log('PRIVATE_KEY')
+  // console.log(PRIVATE_KEY)
+  // console.log("crypto.createHmac('sha256', PRIVATE_KEY)")
+  // console.log(crypto.createHmac('sha256', PRIVATE_KEY))
+  console.log("crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex')")
+  console.log(crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex'))
+})
 // Verify webhook signature
 app.post('/webhook', async (req, res) => {
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
-  const hmac = crypto.createHmac('sha256', PRIVATE_KEY).update(payload).digest('hex');
+  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
   
   console.log('local PRIVATE_KEY')
   console.log(PRIVATE_KEY)
-  console.log('hmac')
-  console.log(hmac)
+  
   const calculatedSignature = `sha256=${hmac}`;
-  console.log("signature req.headers['x-hub-signature-256']")
+
+  console.log('calculatedSignature - контрольная сумма, посчитанная локально')
+  console.log(calculatedSignature)
+
+  console.log("signature - контрольная сумма, которая приходит в хэдере")
   console.log(signature)
 
   if (signature !== calculatedSignature) {
