@@ -34,7 +34,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat) {
       repo_name: repo_name,
       commit_message: commit_message,
       pat: pat,
-      safe_url: process.env.SAFE_URL,
+      safe_url: 'process.env.SAFE_URL',
       namespace: namespace,
     },
   });
