@@ -20,14 +20,6 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT
  * состоит из:
  * const hmac = crypto.createHmac('sha256', 'your-webhook-secret').update(payload).digest('hex');
  */
-app.post('/test', async (req, res) => {
-  // console.log('PRIVATE_KEY')
-  // console.log(PRIVATE_KEY)
-  // console.log("crypto.createHmac('sha256', PRIVATE_KEY)")
-  // console.log(crypto.createHmac('sha256', PRIVATE_KEY))
-  console.log("crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex')")
-  console.log(crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex'))
-})
 // Verify webhook signature
 app.post('/webhook', async (req, res) => {
   const eventType = req.headers['x-github-event']
@@ -45,28 +37,19 @@ app.post('/webhook', async (req, res) => {
     const installationId = req.body.installation.id;
     const repo = req.body.repository.full_name;
 
-    console.log('installationId')
-    console.log(installationId) // 58614893
-    console.log('repo')
-    console.log(repo) // Artanty/shared-secrets
-
-    // Authenticate as the GitHub App
+//try create octokit 1
     // const octokit = new Octokit({
-    //   auth: `Bearer ${await getInstallationAccessToken(installationId)}`,
+    //   auth: APP_GIT_PAT,
     // });
 
-    const octokit = new Octokit({
-      auth: APP_GIT_PAT,
-    });
-
-    
-    // const app2 = new App({
-    //   appId: APP_ID,
-    //   privateKey: PRIVATE_KEY,
-    //   webhooks: {
-    //     secret: WEBHOOK_SECRET
-    //   },
-    // });
+//try create octokit 2
+    const octokit = new App({
+      appId: APP_ID,
+      privateKey: PRIVATE_KEY,
+      webhooks: {
+        secret: WEBHOOK_SECRET
+      },
+    })
 
     console.log('octokit')
     console.log(octokit)

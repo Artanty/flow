@@ -2,15 +2,75 @@
 
 ## Requirements
 
-- Node.js 20 or higher
-- A GitHub App subscribed to **Pull Request** events and with the following permissions:
-  - Pull requests: Read & write
-  - Metadata: Read-only
-- (For local development) A tunnel to expose your local server to the internet (e.g. [smee](https://smee.io/), [ngrok](https://ngrok.com/) or [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/local/))
-- Your GitHub App Webhook must be configured to receive events at a URL that is accessible from the internet.
+https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
+
+This event occurs when there is a push to a repository branch. This includes when a commit is pushed, when a commit tag is pushed, when a branch is deleted, when a tag is deleted, or when a repository is created from a template. To subscribe to only branch and tag deletions, use the delete webhook event.
+
+To subscribe to this event, a GitHub App must have at least read-level access for the "Contents" repository permission.
+
+Events will not be created if more than 5000 branches are pushed at once. Events will not be created for tags when more than three tags are pushed at once.
+
+Availability for push
+- Repositories
+- Organizations
+- GitHub Apps
+
+Webhook payload object for push
+Webhook request body parameters
+Name, Type, Description
+after string Required
+The SHA of the most recent commit on ref after the push.
+
+base_ref string or null Required
+before string Required
+The SHA of the most recent commit on ref before the push.
+
+commits array of objects Required
+An array of commit objects describing the pushed commits. (Pushed commits are all commits that are included in the compare between the before commit and the after commit.) The array includes a maximum of 2048 commits. If necessary, you can use the Commits API to fetch additional commits.
+
+Properties of commits
+compare string Required
+URL that shows the changes in this ref update, from the before commit to the after commit. For a newly created ref that is directly based on the default branch, this is the comparison between the head of the default branch and the after commit. Otherwise, this shows all commits until the after commit.
+
+created boolean Required
+Whether this push created the ref.
+
+deleted boolean Required
+Whether this push deleted the ref.
+
+enterprise object
+An enterprise on GitHub. Webhook payloads contain the enterprise property when the webhook is configured on an enterprise account or an organization that's part of an enterprise account. For more information, see "About enterprise accounts."
+
+forced boolean Required
+Whether this push was a force push of the ref.
+
+head_commit object or null Required
+Properties of head_commit
+installation object
+The GitHub App installation. Webhook payloads contain the installation property when the event is configured for and sent to a GitHub App. For more information, see "Using webhooks with GitHub Apps."
+
+organization object
+A GitHub organization. Webhook payloads contain the organization property when the webhook is configured for an organization, or when the event occurs from activity in a repository owned by an organization.
+
+pusher object Required
+Metaproperties for Git author/committer information.
+
+Properties of pusher
+ref string Required
+The full git ref that was pushed. Example: refs/heads/main or refs/tags/v3.14.1.
+
+repository object Required
+A git repository
+
+sender object
+A GitHub user.
 
 ## Examples
 
+```
+const app = new App({ appId, privateKey });
+for await (const { octokit, repository } of app.eachRepository.iterator()) {}
+```
 ### Push event payload (req.body)
 ```
 {
@@ -189,5 +249,140 @@
     "id": 12345,
     "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMTIzNDU="
   }
+}
+```
+
+### Octokit object
+```
+<ref *1> OctokitWithDefaults {
+  request: [Function: newApi] {
+    endpoint: [Function: bound endpointWithDefaults] {
+      DEFAULTS: [Object],
+      defaults: [Function: bound withDefaults],
+      merge: [Function: bound merge],
+      parse: [Function: parse]
+    },
+    defaults: [Function: bound withDefaults]
+  },
+  graphql: [Function: newApi] {
+    defaults: [Function: bound withDefaults],
+    endpoint: [Function: bound endpointWithDefaults] {
+      DEFAULTS: [Object],
+      defaults: [Function: bound withDefaults],
+      merge: [Function: bound merge],
+      parse: [Function: parse]
+    }
+  },
+  log: {
+    debug: [Function: noop],
+    info: [Function: noop],
+    warn: [Function: bound bound ],
+    error: [Function: bound bound ]
+  },
+  hook: [Function: bound register] {
+    api: {
+      remove: [Function: bound removeHook],
+      before: [Function: bound addHook],
+      error: [Function: bound addHook],
+      after: [Function: bound addHook],
+      wrap: [Function: bound addHook]
+    },
+    remove: [Function: bound removeHook],
+    before: [Function: bound addHook],
+    error: [Function: bound addHook],
+    after: [Function: bound addHook],
+    wrap: [Function: bound addHook]
+  },
+  auth: [Function: bound auth] AsyncFunction {
+    hook: [Function: bound hook] AsyncFunction
+  },
+  actions: { octokit: [Circular *1], scope: 'actions', cache: {} },
+  activity: { octokit: [Circular *1], scope: 'activity', cache: {} },
+  apps: { octokit: [Circular *1], scope: 'apps', cache: {} },
+  billing: { octokit: [Circular *1], scope: 'billing', cache: {} },
+  checks: { octokit: [Circular *1], scope: 'checks', cache: {} },
+  codeScanning: { octokit: [Circular *1], scope: 'codeScanning', cache: {} },
+  codesOfConduct: { octokit: [Circular *1], scope: 'codesOfConduct', cache: {} },
+  codespaces: { octokit: [Circular *1], scope: 'codespaces', cache: {} },
+  copilot: { octokit: [Circular *1], scope: 'copilot', cache: {} },
+  dependabot: { octokit: [Circular *1], scope: 'dependabot', cache: {} },
+  dependencyGraph: { octokit: [Circular *1], scope: 'dependencyGraph', cache: {} },
+  emojis: { octokit: [Circular *1], scope: 'emojis', cache: {} },
+  gists: { octokit: [Circular *1], scope: 'gists', cache: {} },
+  git: { octokit: [Circular *1], scope: 'git', cache: {} },
+  gitignore: { octokit: [Circular *1], scope: 'gitignore', cache: {} },
+  interactions: { octokit: [Circular *1], scope: 'interactions', cache: {} },
+  issues: { octokit: [Circular *1], scope: 'issues', cache: {} },
+  licenses: { octokit: [Circular *1], scope: 'licenses', cache: {} },
+  markdown: { octokit: [Circular *1], scope: 'markdown', cache: {} },
+  meta: { octokit: [Circular *1], scope: 'meta', cache: {} },
+  migrations: { octokit: [Circular *1], scope: 'migrations', cache: {} },
+  oidc: { octokit: [Circular *1], scope: 'oidc', cache: {} },
+  orgs: { octokit: [Circular *1], scope: 'orgs', cache: {} },
+  packages: { octokit: [Circular *1], scope: 'packages', cache: {} },
+  projects: { octokit: [Circular *1], scope: 'projects', cache: {} },
+  pulls: { octokit: [Circular *1], scope: 'pulls', cache: {} },
+  rateLimit: { octokit: [Circular *1], scope: 'rateLimit', cache: {} },
+  reactions: { octokit: [Circular *1], scope: 'reactions', cache: {} },
+  repos: { octokit: [Circular *1], scope: 'repos', cache: {} },
+  search: { octokit: [Circular *1], scope: 'search', cache: {} },
+  secretScanning: { octokit: [Circular *1], scope: 'secretScanning', cache: {} },
+  securityAdvisories: { octokit: [Circular *1], scope: 'securityAdvisories', cache: {} },
+  teams: { octokit: [Circular *1], scope: 'teams', cache: {} },
+  users: { octokit: [Circular *1], scope: 'users', cache: {} },
+  rest: {
+    actions: { octokit: [Circular *1], scope: 'actions', cache: {} },
+    activity: { octokit: [Circular *1], scope: 'activity', cache: {} },
+    apps: { octokit: [Circular *1], scope: 'apps', cache: {} },
+    billing: { octokit: [Circular *1], scope: 'billing', cache: {} },
+    checks: { octokit: [Circular *1], scope: 'checks', cache: {} },
+    codeScanning: { octokit: [Circular *1], scope: 'codeScann
+```
+
+### Octokit interface
+```
+export declare class App<TOptions extends Options = Options> {
+    static VERSION: string;
+    static defaults<TDefaults extends Options, S extends Constructor<App<TDefaults>>>(this: S, defaults: Partial<TDefaults>): {
+        new (...args: any[]): {
+            octokit: OctokitType<TDefaults>;
+            webhooks: Webhooks<{
+                octokit: OctokitType<TDefaults>;
+            }>;
+            oauth: OAuthApp<{
+                clientType: "github-app";
+                Octokit: OctokitClassType<TDefaults>;
+            }>;
+            getInstallationOctokit: GetInstallationOctokitInterface<OctokitType<TDefaults>>;
+            eachInstallation: EachInstallationInterface<OctokitType<TDefaults>>;
+            eachRepository: EachRepositoryInterface<OctokitType<TDefaults>>;
+            log: {
+                [key: string]: unknown;
+                debug: (message: string, additionalInfo?: object | undefined) => void;
+                info: (message: string, additionalInfo?: object | undefined) => void;
+                warn: (message: string, additionalInfo?: object | undefined) => void;
+                error: (message: string, additionalInfo?: object | undefined) => void;
+            };
+        };
+    } & S;
+    octokit: OctokitType<TOptions>;
+    webhooks: Webhooks<{
+        octokit: OctokitType<TOptions>;
+    }>;
+    oauth: OAuthApp<{
+        clientType: "github-app";
+        Octokit: OctokitClassType<TOptions>;
+    }>;
+    getInstallationOctokit: GetInstallationOctokitInterface<OctokitType<TOptions>>;
+    eachInstallation: EachInstallationInterface<OctokitType<TOptions>>;
+    eachRepository: EachRepositoryInterface<OctokitType<TOptions>>;
+    log: {
+        debug: (message: string, additionalInfo?: object) => void;
+        info: (message: string, additionalInfo?: object) => void;
+        warn: (message: string, additionalInfo?: object) => void;
+        error: (message: string, additionalInfo?: object) => void;
+        [key: string]: unknown;
+    };
+    constructor(options: ConstructorOptions<TOptions>);
 }
 ```
