@@ -40,7 +40,7 @@ app.post('/webhook', async (req, res) => {
     await octokit.actions.createWorkflowDispatch({
       owner: 'Artanty', // Replace with the target repository owner
       repo: 'serf',   // Replace with the target repository name
-      workflow_id: 'deploy.yaml', // Replace with the workflow file name
+      workflow_id: 'deploy.yml', // Replace with the workflow file name
       ref: 'master', // Replace with the branch name in the target repository
       inputs: {
         repo: req.body.repository.full_name, // Pass the source repository as an input
