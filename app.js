@@ -44,8 +44,9 @@ app.post('/webhook', async (req, res) => {
       ref: 'master', // Replace with the branch name in the target repository
       inputs: {
         repo: req.body.repository.full_name, // Pass the source repository as an input
+        commit_message: req.body.head_commit.message,
         pat: APP_GIT_PAT,
-        safe: process.env.SAFE_URL,
+        safe_url: process.env.SAFE_URL,
       },
     });
 
