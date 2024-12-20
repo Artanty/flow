@@ -15,12 +15,14 @@ const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET
 const APP_GIT_PAT = process.env.APP_GIT_PAT
 
+ignoredRepos = ['serf']
 /**
  * req.headers['x-hub-signature-256'] - контрольная сумма payload'а.
  * состоит из:
  * const hmac = crypto.createHmac('sha256', 'your-webhook-secret').update(payload).digest('hex');
  */
 app.post('/webhook', async (req, res) => {
+  const repo_name = req.body.repository.name
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
@@ -31,7 +33,7 @@ app.post('/webhook', async (req, res) => {
     return res.status(401).send('Invalid signature');
   }
 
-  if (eventType === 'push' && req.body.ref === 'refs/heads/master') {
+  if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !ignoredRepos.include(repo_name)) {
 
     const octokit = new Octokit({
       auth: APP_GIT_PAT,
@@ -43,7 +45,7 @@ app.post('/webhook', async (req, res) => {
       workflow_id: 'deploy.yml', // Replace with the workflow file name
       ref: 'master', // Replace with the branch name in the target repository
       inputs: {
-        repo_name: req.body.repository.name,
+        repo_name: repo_name,
         commit_message: req.body.head_commit.message,
         pat: APP_GIT_PAT,
         safe_url: process.env.SAFE_URL,
