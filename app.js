@@ -19,7 +19,6 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const ignoredRepos = ['serf'];
 let octokit
 /**
- * Function to trigger workflow with parameters
  * @param {string} namespace - The namespace ('web', 'back', or 'root')
  * @param {string} repo_name - The repository name
  * @param {string} commit_message - The commit message
