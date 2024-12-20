@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 import express from 'express';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
-
-import { App, createNodeMiddleware } from "octokit";
+import { Octokit } from '@octokit/rest';
+import {App} from "octokit";
 dotenv.config();
 const app = express();
 app.use(bodyParser.json());
@@ -14,48 +14,51 @@ const PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET
 const APP_GIT_PAT = process.env.APP_GIT_PAT
-const APP_CLIENT_ID = process.env.APP_CLIENT_ID
-const APP_CLIENT_SECRET = process.env.APP_CLIENT_SECRET
 
+/**
+ * req.headers['x-hub-signature-256'] - контрольная сумма payload'а.
+ * состоит из:
+ * const hmac = crypto.createHmac('sha256', 'your-webhook-secret').update(payload).digest('hex');
+ */
+// Verify webhook signature
+app.post('/webhook', async (req, res) => {
+  const eventType = req.headers['x-github-event']
+  const payload = JSON.stringify(req.body);
+  const signature = req.headers['x-hub-signature-256'];
+  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
+  const calculatedSignature = `sha256=${hmac}`;
 
-const octokitApp = new App({
-  appId: APP_ID,
-  privateKey: PRIVATE_KEY,
-  webhooks: {
-    secret: WEBHOOK_SECRET
-  },
-  oauth: { 
-    clientId: APP_CLIENT_ID, 
-    clientSecret: APP_CLIENT_SECRET
-  },
-});
+  if (signature !== calculatedSignature) {
+    return res.status(401).send('Invalid signature');
+  }
 
-async function handlePullRequestOpened({octokit, payload}) {
-  console.log(payload);
+  // Handle push event
+  if (eventType === 'push' && req.body.ref === 'refs/heads/master') {
+    const installationId = req.body.installation.id;
+    const repo = req.body.repository.full_name;
 
-  await octokit.actions.createWorkflowDispatch({
-    owner: 'Artanty', // Replace with the target repository owner
-    repo: 'serf',   // Replace with the target repository name
-    workflow_id: 'log.yaml', // Replace with the workflow file name
-    ref: 'master', // Replace with the branch name in the target repository
-    inputs: {
-      source_repo: repo, // Pass the source repository as an input
-    },
-  });
-};
+    const octokit = new Octokit({
+      auth: APP_GIT_PAT,
+    });
 
-octokitApp.webhooks.on("push", handlePullRequestOpened);
+    console.log('octokit')
+    console.log(octokit)
 
-// This logs any errors that occur.
-octokitApp.webhooks.onError((error) => {
-  if (error.name === "AggregateError") {
-    console.error(`Error processing request: ${error.event}`);
+    // Trigger workflow in the target repository
+    await octokit.actions.createWorkflowDispatch({
+      owner: 'Artanty', // Replace with the target repository owner
+      repo: 'serf',   // Replace with the target repository name
+      workflow_id: 'log.yaml', // Replace with the workflow file name
+      ref: 'master', // Replace with the branch name in the target repository
+      inputs: {
+        source_repo: repo, // Pass the source repository as an input
+      },
+    });
+
+    res.status(200).send('Workflow triggered');
   } else {
-    console.error(error);
+    res.status(200).send('Event ignored');
   }
 });
-
-
-app.use(createNodeMiddleware(octokitApp));
 
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
