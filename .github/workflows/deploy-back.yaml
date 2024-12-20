@@ -1,8 +1,8 @@
 name: Push to Another Repository
 
 on:
-  workflow_dispatch:
-    # branches: [ master ]
+  push:
+    branches: [ master ]
 
 permissions:
   contents: write
