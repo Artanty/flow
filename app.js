@@ -41,6 +41,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
 }
 
 app.post('/webhook', async (req, res) => {
+  console.log(process.env.SAFE_URL)
   const repo_name = req.body.repository.name;
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
