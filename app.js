@@ -3,16 +3,17 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
-
+import {App} from "octokit";
 dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 
 // GitHub App credentials
 const APP_ID = process.env.APP_ID;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
 const PORT = process.env.PORT || 3000;
-const WEBHOOK_SECRET = 'mysecret'
+const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET
+const APP_GIT_PAT = process.env.APP_GIT_PAT
 
 /**
  * req.headers['x-hub-signature-256'] - контрольная сумма payload'а.
@@ -39,24 +40,33 @@ app.post('/webhook', async (req, res) => {
     return res.status(401).send('Invalid signature');
   }
 
-  console.log('eventType')
-  console.log(eventType)
-  console.log('req.body.ref')
-  console.log(req.body.ref)
   // Handle push event
   if (eventType === 'push' && req.body.ref === 'refs/heads/master') {
     const installationId = req.body.installation.id;
     const repo = req.body.repository.full_name;
 
     console.log('installationId')
-    console.log(installationId)
+    console.log(installationId) // 58614893
     console.log('repo')
-    console.log(repo)
+    console.log(repo) // Artanty/shared-secrets
 
     // Authenticate as the GitHub App
+    // const octokit = new Octokit({
+    //   auth: `Bearer ${await getInstallationAccessToken(installationId)}`,
+    // });
+
     const octokit = new Octokit({
-      auth: `Bearer ${await getInstallationAccessToken(installationId)}`,
+      auth: APP_GIT_PAT,
     });
+
+    
+    // const app2 = new App({
+    //   appId: APP_ID,
+    //   privateKey: PRIVATE_KEY,
+    //   webhooks: {
+    //     secret: WEBHOOK_SECRET
+    //   },
+    // });
 
     console.log('octokit')
     console.log(octokit)
