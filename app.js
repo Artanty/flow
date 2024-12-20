@@ -18,7 +18,7 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT;
 
 const ignoredRepos = ['serf'];
 
-const octokit= new Octokit({
+const octokit = new Octokit({
   auth: APP_GIT_PAT,
 });
 
