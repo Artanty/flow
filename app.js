@@ -14,7 +14,8 @@ const PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET
 const APP_GIT_PAT = process.env.APP_GIT_PAT
-
+const APP_CLIENT_ID = process.env.APP_CLIENT_ID
+const APP_CLIENT_SECRET = process.env.APP_CLIENT_SECRET
 
 
 const octokitApp = new App({
@@ -22,6 +23,10 @@ const octokitApp = new App({
   privateKey: PRIVATE_KEY,
   webhooks: {
     secret: WEBHOOK_SECRET
+  },
+  oauth: { 
+    clientId: APP_CLIENT_ID, 
+    clientSecret: APP_CLIENT_SECRET
   },
 });
 
