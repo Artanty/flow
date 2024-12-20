@@ -32,10 +32,10 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
     ref: 'master',    // Replace with the branch name in the target repository
     inputs: {
       repo_name: repo_name,
-      namespace: namespace,
       commit_message: commit_message,
       pat: pat,
       safe_url: safe_url,
+      namespace: namespace,
     },
   });
 }
