@@ -29,6 +29,7 @@ app.post('/test', async (req, res) => {
 })
 // Verify webhook signature
 app.post('/webhook', async (req, res) => {
+  const eventType = req.headers['x-github-event']
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
@@ -38,12 +39,12 @@ app.post('/webhook', async (req, res) => {
     return res.status(401).send('Invalid signature');
   }
 
-  console.log('req.body.action')
-  console.log(req.body.action)
+  console.log('eventType')
+  console.log(eventType)
   console.log('req.body.ref')
   console.log(req.body.ref)
   // Handle push event
-  if (req.body.action === 'push' && req.body.ref === 'refs/heads/master') {
+  if (eventType === 'push' && req.body.ref === 'refs/heads/master') {
     const installationId = req.body.installation.id;
     const repo = req.body.repository.full_name;
 
