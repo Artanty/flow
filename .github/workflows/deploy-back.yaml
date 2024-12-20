@@ -80,6 +80,7 @@ jobs:
           APP_GIT_PAT=${{ fromJson(steps.safe.outputs.response).data.APP_GIT_PAT }}
           APP_CLIENT_ID=${{ fromJson(steps.safe.outputs.response).data.APP_CLIENT_ID }}
           APP_CLIENT_SECRET=${{ fromJson(steps.safe.outputs.response).data.APP_CLIENT_SECRET }}
+          SAFE_URL=${{ env.SAFE_URL }}
           APP_PRIVATE_KEY=${{ fromJson(steps.safe.outputs.response).data.APP_PRIVATE_KEY }}" > .env
 
       - name: Set environment variables and push to another repository
@@ -87,6 +88,7 @@ jobs:
           echo "TARGET_GIT_TOKEN=${{ fromJson(steps.safe.outputs.response).data.GIT_PAT }}" >> $GITHUB_ENV
           echo "TARGET_GIT_USER=${{ fromJson(steps.safe.outputs.response).data.GIT_LOGIN }}" >> $GITHUB_ENV
           echo "TARGET_GIT_REPO=${{ fromJson(steps.safe.outputs.response).data.GIT_REPO }}" >> $GITHUB_ENV
+          echo "TARGET_GIT_EMAIL=${{ fromJson(steps.safe.outputs.response).data.GIT_EMAIL }}" >> $GITHUB_ENV
       
       - name: Pushes to another repository
         uses: cpina/github-action-push-to-another-repository@main
@@ -96,5 +98,5 @@ jobs:
           source-directory: '.'
           destination-github-username: ${{ env.TARGET_GIT_USER }}
           destination-repository-name: ${{ env.TARGET_GIT_REPO }}
-          user-email: "onarlandlord@gmail.com"
+          user-email: ${{ env.TARGET_GIT_EMAIL }}
           target-branch: main
