@@ -66,10 +66,20 @@ sender object
 A GitHub user.
 
 ## Examples
-
+1
 ```
 const app = new App({ appId, privateKey });
 for await (const { octokit, repository } of app.eachRepository.iterator()) {}
+```
+2
+```
+const app = new App({
+      appId: APP_ID,
+      privateKey: PRIVATE_KEY,
+      webhooks: {
+        secret: WEBHOOK_SECRET
+      },
+    })
 ```
 ### Push event payload (req.body)
 ```
