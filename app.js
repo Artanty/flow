@@ -17,14 +17,12 @@ const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
 
 const ignoredRepos = ['serf'];
-let octokit
-/**
- * @param {string} namespace - The namespace ('web', 'back', or 'root')
- * @param {string} repo_name - The repository name
- * @param {string} commit_message - The commit message
- * @param {string} pat - The personal access token
- * @param {string} safe_url - The safe URL
- */
+
+const octokit= new Octokit({
+  auth: APP_GIT_PAT,
+});
+
+
 async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_url) {
 
   await octokit.actions.createWorkflowDispatch({
@@ -72,15 +70,10 @@ app.post('/webhook', async (req, res) => {
     if (hasBackFolder && backChanges) namespaces.push('back');
     if (!hasWebFolder && !hasBackFolder) namespaces.push('root');
 
-    if (namespaces.length){
-      octokit = new Octokit({
-        auth: APP_GIT_PAT,
-      });
-    } 
     // Iterate over the namespaces and trigger the workflow
     for (const namespace of namespaces) {
       await triggerWorkflow(
-        namespace,
+        namespace === 'root' ? '' : namespace,
         repo_name,
         req.body.head_commit.message,
         APP_GIT_PAT,
