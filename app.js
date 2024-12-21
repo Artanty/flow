@@ -82,7 +82,7 @@ app.post('/webhook', async (req, res) => {
     // Iterate over the namespaces and trigger the workflow
     for (const namespace of namespaces) {
       await triggerWorkflow(
-        namespace === 'root' ? '' : namespace,
+        namespace,
         repo_name,
         commitMessage,
         APP_GIT_PAT,
