@@ -48,7 +48,7 @@ app.post('/webhook', async (req, res) => {
   const eventType = req.headers['x-github-event'];
   const commitMessage = req.body.head_commit.message.trim();
 
-  if (/ -d(;|$)/.test(commitMessage)) { {
+  if (/ -d(;|$)/.test(commitMessage)) {
     return res.status(200).send('Event ignored (-d)');
   }
 
