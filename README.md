@@ -4,7 +4,11 @@
 
 https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
 
-This event occurs when there is a push to a repository branch. This includes when a commit is pushed, when a commit tag is pushed, when a branch is deleted, when a tag is deleted, or when a repository is created from a template. To subscribe to only branch and tag deletions, use the delete webhook event.
+This event occurs when there is a push to a repository branch. 
+This includes when a commit is pushed, when a commit tag is pushed, 
+when a branch is deleted, when a tag is deleted, 
+or when a repository is created from a template. 
+To subscribe to only branch and tag deletions, use the delete webhook event.
 
 To subscribe to this event, a GitHub App must have at least read-level access for the "Contents" repository permission.
 
