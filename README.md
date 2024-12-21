@@ -519,3 +519,26 @@ Update from Artanty/flow@afa7b28
 и так:
 Update from https://github.com/Artanty/serf/commit/e2913bcec82530985fde7fd26e7604ec53e8413b
 когда экшен приватный
+
+## Прочее
+
+" -d" can be at the end of the string and may have only ";" after it (or nothing after it).
+" -d" is not at the end of the string, and after " -d" there must be a space.
+
+```
+if (/ -d(;|$)/.test(commitMessage)) {
+  return res.status(200).send('Event ignored');
+}
+```
+
+exp:
+```
+-d: Matches the literal string " -d".
+
+(;|$): Matches either a ";" or the end of the string ($).
+
+;: Matches a semicolon.
+
+$: Matches the end of the string.
+
+```

@@ -40,13 +40,17 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
 }
 
 app.post('/webhook', async (req, res) => {
-  console.log(process.env.SAFE_URL)
   const repo_name = req.body.repository.name;
   const payload = JSON.stringify(req.body);
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
   const calculatedSignature = `sha256=${hmac}`;
   const eventType = req.headers['x-github-event'];
+  const commitMessage = req.body.head_commit.message.trim();
+
+  if (/ -d(;|$)/.test(commitMessage)) { {
+    return res.status(200).send('Event ignored (-d)');
+  }
 
   if (signature !== calculatedSignature) {
     return res.status(401).send('Invalid signature');
@@ -75,7 +79,7 @@ app.post('/webhook', async (req, res) => {
       await triggerWorkflow(
         namespace === 'root' ? '' : namespace,
         repo_name,
-        req.body.head_commit.message,
+        commitMessage,
         APP_GIT_PAT,
         process.env.SAFE_URL
       );
