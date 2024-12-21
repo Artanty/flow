@@ -3,7 +3,6 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
-import fs from 'fs'; // Import fs to check for folder existence
 
 dotenv.config();
 const app = express();
@@ -57,21 +56,27 @@ app.post('/webhook', async (req, res) => {
   }
 
   if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !ignoredRepos.includes(repo_name)) {
-    // Check if 'web' or 'back' folders exist in the repository
-    const hasWebFolder = fs.existsSync('web');
-    const hasBackFolder = fs.existsSync('back');
 
     // Get the list of files changed in the last commit
     const changedFiles = req.body.head_commit.modified.concat(req.body.head_commit.added);
 
-    // Check if changes are inside 'web' or 'back' folders
-    const webChanges = changedFiles.some(file => file.startsWith('web/'));
-    const backChanges = changedFiles.some(file => file.startsWith('back/'));
+    // Determine which folders were affected by the changes
+    const affectedFolders = new Set();
+    changedFiles.forEach(file => {
+      const folder = file.split('/')[0]; // Extract the first part of the file path as the folder
+      if (folder) {
+        affectedFolders.add(folder);
+      }
+    });
+
+    // Check if 'web' or 'back' folders are in the affected folders
+    const hasWebFolder = affectedFolders.has('web');
+    const hasBackFolder = affectedFolders.has('back');
 
     // Create an array of namespaces based on folder existence and changes
     const namespaces = [];
-    if (hasWebFolder && webChanges) namespaces.push('web');
-    if (hasBackFolder && backChanges) namespaces.push('back');
+    if (hasWebFolder) namespaces.push('web');
+    if (hasBackFolder) namespaces.push('back');
     if (!hasWebFolder && !hasBackFolder) namespaces.push('root');
 
     // Iterate over the namespaces and trigger the workflow
