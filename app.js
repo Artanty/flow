@@ -86,33 +86,16 @@ app.post('/webhook', async (req, res) => {
     if (hasBackFolder) namespaces.push('back');
     if (!hasWebFolder && !hasBackFolder) namespaces.push('root');
 
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
     // Iterate over the namespaces and trigger the workflow
-    // for (const namespace of namespaces) {
-    //   await triggerWorkflow(
-    //     namespace,
-    //     repo_name,
-    //     commitMessage,
-    //     APP_GIT_PAT,
-    //     process.env.SAFE_URL
-    //   );
-    // }
-    (async () => {
-      for (const namespace of namespaces) {
-        await triggerWorkflow(
-          namespace,
-          repo_name,
-          commitMessage,
-          APP_GIT_PAT,
-          process.env.SAFE_URL
-        );
-    
-        // Add a 5-second delay before the next iteration
-        await delay(5000); // 5000 milliseconds = 5 seconds
-      }
-    })();
-
+    for (const namespace of namespaces) {
+      await triggerWorkflow(
+        namespace,
+        repo_name,
+        commitMessage,
+        APP_GIT_PAT,
+        process.env.SAFE_URL
+      );
+    }
     res.status(200).send('Workflow triggered');
   } else {
     res.status(200).send('Event ignored');
