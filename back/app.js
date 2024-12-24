@@ -1,11 +1,13 @@
 import dotenv from 'dotenv';
 import express from 'express';
+const axios = require('axios');
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
 
 dotenv.config();
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 // GitHub App credentials
@@ -39,9 +41,9 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
         stat_url: STAT_URL,
       },
     });
-    console.log(`Workflow triggered for namespace: ${namespace}`);
+    console.log(`Flow triggered for: ${repo_name}@${namespace}, commit: ${commit_message}`);
   } catch (error) {
-    console.error(`Error triggering workflow for namespace: ${namespace}`, error);
+    console.error(`Error triggering workflow for: ${repo_name}@${namespace}`, error);
   }
 }
 
@@ -116,15 +118,30 @@ async function sendRuntimeEventToStat(triggerIP) {
   }
 }
 
+async function getPublicIP() {
+  try {
+    const response = await axios.get('https://api.ipify.org?format=json');
+    return response.data.ip;
+  } catch (error) {
+    console.error('Error fetching public IP:', error);
+    return null;
+  }
+}
+
 app.get('/get-updates', async (req, res) => {
   console.log(req)
   const clientIP = req.ip
   await sendRuntimeEventToStat(clientIP)
-  // const publicIP = await getPublicIP()
+  
   res.json({ 
     trigger: clientIP,
-    PORT: process.env.PORT
+    PORT: process.env.PORT,
+    // publicIP: publicIP
    })
 })
 
-app.listen(PORT, () => console.log('Server running on port ' + PORT));
+app.listen(PORT, async() => {
+  console.log('Server running on port ' + PORT)
+  const publicIP = await getPublicIP()
+  console.log({publicIP})
+});
