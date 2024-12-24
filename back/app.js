@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import express from 'express';
-const axios = require('axios');
+import axios from 'axios';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
