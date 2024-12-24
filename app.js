@@ -14,6 +14,7 @@ const PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
+const STAT_URL = process.env.STAT_URL;
 
 const ignoredRepos = ['serf'];
 
@@ -23,19 +24,25 @@ const octokit = new Octokit({
 
 async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_url) {
 
-  await octokit.actions.createWorkflowDispatch({
-    owner: 'Artanty', // Replace with the target repository owner
-    repo: 'serf',     // Replace with the target repository name
-    workflow_id: 'deploy.yml', // Replace with the workflow file name
-    ref: 'master',    // Replace with the branch name in the target repository
-    inputs: {
-      repo_name: repo_name,
-      commit_message: commit_message,
-      pat: pat,
-      safe_url: safe_url,
-      namespace: namespace,
-    },
-  });
+  try {
+    await octokit.actions.createWorkflowDispatch({
+      owner: 'Artanty', // Replace with the target repository owner
+      repo: 'serf',     // Replace with the target repository name
+      workflow_id: 'deploy.yml', // Replace with the workflow file name
+      ref: 'master',    // Replace with the branch name in the target repository
+      inputs: {
+        repo_name: repo_name,
+        commit_message: commit_message,
+        pat: pat,
+        safe_url: safe_url,
+        namespace: namespace,
+        stat_url: STAT_URL,
+      },
+    });
+    console.log(`Workflow triggered for namespace: ${namespace}`);
+  } catch (error) {
+    console.error(`Error triggering workflow for namespace: ${namespace}`, error);
+  }
 }
 
 app.post('/webhook', async (req, res) => {
@@ -79,16 +86,32 @@ app.post('/webhook', async (req, res) => {
     if (hasBackFolder) namespaces.push('back');
     if (!hasWebFolder && !hasBackFolder) namespaces.push('root');
 
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     // Iterate over the namespaces and trigger the workflow
-    for (const namespace of namespaces) {
-      await triggerWorkflow(
-        namespace,
-        repo_name,
-        commitMessage,
-        APP_GIT_PAT,
-        process.env.SAFE_URL
-      );
-    }
+    // for (const namespace of namespaces) {
+    //   await triggerWorkflow(
+    //     namespace,
+    //     repo_name,
+    //     commitMessage,
+    //     APP_GIT_PAT,
+    //     process.env.SAFE_URL
+    //   );
+    // }
+    (async () => {
+      for (const namespace of namespaces) {
+        await triggerWorkflow(
+          namespace,
+          repo_name,
+          commitMessage,
+          APP_GIT_PAT,
+          process.env.SAFE_URL
+        );
+    
+        // Add a 5-second delay before the next iteration
+        await delay(5000); // 5000 milliseconds = 5 seconds
+      }
+    })();
 
     res.status(200).send('Workflow triggered');
   } else {
