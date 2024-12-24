@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import axios from 'axios';
-
+import cors from 'cors';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
