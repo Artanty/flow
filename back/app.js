@@ -10,9 +10,6 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// GitHub App credentials
-const APP_ID = process.env.APP_ID;
-const PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
