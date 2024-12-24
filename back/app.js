@@ -76,15 +76,10 @@ app.post('/webhook', async (req, res) => {
       }
     });
 
-    // Check if 'web' or 'back' folders are in the affected folders
-    const hasWebFolder = affectedFolders.has('web');
-    const hasBackFolder = affectedFolders.has('back');
-
     // Create an array of namespaces based on folder existence and changes
     const namespaces = [];
-    if (hasWebFolder) namespaces.push('web');
-    if (hasBackFolder) namespaces.push('back');
-    if (!hasWebFolder && !hasBackFolder) namespaces.push('root');
+    if (affectedFolders.has('web')) namespaces.push('web');
+    if (affectedFolders.has('back')) namespaces.push('back');
 
     // Iterate over the namespaces and trigger the workflow
     for (const namespace of namespaces) {
@@ -101,5 +96,35 @@ app.post('/webhook', async (req, res) => {
     res.status(200).send('Event ignored');
   }
 });
+
+async function sendRuntimeEventToStat(triggerIP) {
+  try {
+    const payload = {
+      projectId: process.env.REPO,
+      namespace: process.env.NAMESPACE,
+      stage: 'RUNTIME',
+      eventData: {
+        triggerIP: triggerIP, 
+        slaveRepo: process.env.SLAVE_REPO
+      }
+    }
+    await axios.post(process.env.STAT_URL, payload);
+  } catch (error) {
+    console.error('error in sendRuntimeEventToStat...');
+    console.error(error);
+    return null;
+  }
+}
+
+app.get('/get-updates', async (req, res) => {
+  console.log(req)
+  const clientIP = req.ip
+  await sendRuntimeEventToStat(clientIP)
+  // const publicIP = await getPublicIP()
+  res.json({ 
+    trigger: clientIP,
+    PORT: process.env.PORT
+   })
+})
 
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
