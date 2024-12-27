@@ -16,7 +16,7 @@ const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const STAT_URL = process.env.STAT_URL;
 
-const ignoredRepos = ['serf'];
+const ignoredRepos = ['serf', '_dump'];
 
 const octokit = new Octokit({
   auth: APP_GIT_PAT,
