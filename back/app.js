@@ -97,49 +97,83 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
+
 async function sendRuntimeEventToStat(triggerIP) {
   try {
     const payload = {
-      projectId: process.env.REPO,
+      projectId: `${process.env.PROJECT_ID}@github`,
       namespace: process.env.NAMESPACE,
       stage: 'RUNTIME',
-      eventData: {
-        triggerIP: triggerIP, 
-        slaveRepo: process.env.SLAVE_REPO
-      }
+      eventData: JSON.stringify(
+        {
+          triggerIP: triggerIP,
+          projectId: process.env.PROJECT_ID,
+          slaveRepo: process.env.SLAVE_REPO,
+          commit: process.env.COMMIT
+        }
+      )
     }
-    await axios.post(process.env.STAT_URL, payload);
+    await axios.post(`${process.env.STAT_URL}/add-event`, payload);
+    console.log(`SENT TO @stat: ${process.env.PROJECT_ID}@github -> ${process.env.SLAVE_REPO} | ${process.env.COMMIT}`)
+    return true
   } catch (error) {
     console.error('error in sendRuntimeEventToStat...');
-    console.error(error);
-    return null;
+    if (axios.isAxiosError(error)) {
+      // Handle Axios-specific errors
+      const axiosError = error; // as AxiosError
+      console.error('Axios Error:', {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+      });
+    } else {
+        // Handle generic errors
+        console.error('Unexpected Error:', error);
+    }
+    return false;
   }
 }
 
-async function getPublicIP() {
-  try {
-    const response = await axios.get('https://api.ipify.org?format=json');
-    return response.data.ip;
-  } catch (error) {
-    console.error('Error fetching public IP:', error);
-    return null;
-  }
+// Function to check if the current minute is one of [0, 15, 30, 45]
+function shouldRunStat(currentMinute) { // : boolean
+  return [1, 15, 30, 45].includes(currentMinute);
 }
 
+// Global variable to track the last minute when sendRuntimeEventToStat was called
+let lastExecutedMinute = null; // : number | null
+
+//(req: Request, res: Response) => {
 app.get('/get-updates', async (req, res) => {
-  console.log(req)
-  const clientIP = req.ip
-  await sendRuntimeEventToStat(clientIP)
-  
-  res.json({ 
-    trigger: clientIP,
-    PORT: process.env.PORT,
-    // publicIP: publicIP
-   })
-})
+  const clientIP = req.ip;
+
+  // Parse URL parameters
+  const { stat } = req.query;
+
+  let sendToStatResult = false;
+
+  // Get the current minute
+  const now = new Date();
+  const currentMinute = now.getMinutes();
+
+  // Check if stat=true is in the URL params
+  if (stat === 'true') {
+      sendToStatResult = await sendRuntimeEventToStat(clientIP);
+  } else {
+      // If stat is not true, check the current time and whether the function was already called this minute
+      if (shouldRunStat(currentMinute) && lastExecutedMinute !== currentMinute) {
+          lastExecutedMinute = currentMinute; // Update the last executed minute
+          sendToStatResult = await sendRuntimeEventToStat(clientIP);
+      }
+  }
+
+  res.json({
+      trigger: clientIP,
+      PORT: process.env.PORT,
+      isSendToStat: sendToStatResult,
+  });
+});
 
 app.listen(PORT, async() => {
   console.log('Server running on port ' + PORT)
-  const publicIP = await getPublicIP()
-  console.log({publicIP})
 });
