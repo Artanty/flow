@@ -17,6 +17,9 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const STAT_URL = process.env.STAT_URL;
 
 const ignoredRepos = ['serf', '_dump'];
+const ignoredNamespaces = {
+  faq: ['web']
+}
 
 const octokit = new Octokit({
   auth: APP_GIT_PAT,
@@ -83,13 +86,17 @@ app.post('/webhook', async (req, res) => {
 
     // Iterate over the namespaces and trigger the workflow
     for (const namespace of namespaces) {
-      await triggerWorkflow(
-        namespace,
-        repo_name,
-        commitMessage,
-        APP_GIT_PAT,
-        process.env.SAFE_URL
-      );
+      if (ignoredNamespaces[repo_name]?.includes(namespace)) {
+        console.log(`${repo_name}@${namespace} IGNORED.`)
+      } else {
+        await triggerWorkflow(
+          namespace,
+          repo_name,
+          commitMessage,
+          APP_GIT_PAT,
+          process.env.SAFE_URL
+        );
+      }
     }
     res.status(200).send('Workflow triggered');
   } else {
