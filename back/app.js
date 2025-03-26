@@ -15,8 +15,38 @@ const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const STAT_URL = process.env.STAT_URL;
+const SAFE_URL = process.env.SAFE_URL
 
-const ignoredRepos = ['serf', '_dump'];
+const ignoredRepos = [
+  'githooklib', 
+  'githooklib-test',
+  'bash',
+  'snt',
+  'host',
+  'typlib',
+  'http-request-action',
+  'shell',
+  'netlify',
+  'free-chat',
+  'room',
+  'aparta',
+  'frames',
+  'laravel-angular-auth',
+  'test_front_ang_utube',
+  'alibi-react-ui-lib',
+  'test_back_lara',
+  'cell',
+  'tval',
+  'forgot',
+  'papakarla',
+  'folders',
+  'doctrinizer',
+  'lara_horizon',
+  'tamashi',
+  'gear',
+  'php_oop',
+  'grapesJS',
+  'serf', '_dump'];
 const ignoredNamespaces = {
   faq: ['web']
 }
@@ -57,53 +87,121 @@ app.post('/webhook', async (req, res) => {
   const eventType = req.headers['x-github-event'];
   const commitMessage = req.body.head_commit.message.trim();
 
-  if (/ -d(;|$)/.test(commitMessage)) {
-    return res.status(200).send('Event ignored (-d)');
-  }
+  // if (/ -d(;|$)/.test(commitMessage)) {
+  //   return res.status(200).send('Event ignored (-d)');
+  // }
 
   if (signature !== calculatedSignature) {
     return res.status(401).send('Invalid signature');
   }
 
-  if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !ignoredRepos.includes(repo_name)) {
+  // Handle version tag pushes (e.g., v12.23.55.32)
+  if (eventType === 'push' && req.body.ref.startsWith('refs/tags/v') && !ignoredRepos.includes(repo_name)) {
+    handleTag(req, res)
+  }
 
-    // Get the list of files changed in the last commit
-    const changedFiles = req.body.head_commit.modified.concat(req.body.head_commit.added);
-
-    // Determine which folders were affected by the changes
-    const affectedFolders = new Set();
-    changedFiles.forEach(file => {
-      const folder = file.split('/')[0]; // Extract the first part of the file path as the folder
-      if (folder) {
-        affectedFolders.add(folder);
-      }
-    });
-
-    // Create an array of namespaces based on folder existence and changes
-    const namespaces = [];
-    if (affectedFolders.has('web')) namespaces.push('web');
-    if (affectedFolders.has('back')) namespaces.push('back');
-
-    // Iterate over the namespaces and trigger the workflow
-    for (const namespace of namespaces) {
-      if (ignoredNamespaces[repo_name]?.includes(namespace)) {
-        console.log(`${repo_name}@${namespace} IGNORED.`)
-      } else {
-        await triggerWorkflow(
-          namespace,
-          repo_name,
-          commitMessage,
-          APP_GIT_PAT,
-          process.env.SAFE_URL
-        );
-      }
-    }
-    res.status(200).send('Workflow triggered');
-  } else {
+  else if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !ignoredRepos.includes(repo_name)) {
+    handlePushMaster(req, res, commitMessage)
+  } 
+  
+  else {
     res.status(200).send('Event ignored');
   }
 });
 
+async function handlePushMaster (req, res, commitMessage) {
+  // Get the list of files changed in the last commit
+  const changedFiles = req.body.head_commit.modified.concat(req.body.head_commit.added);
+
+  // Determine which folders were affected by the changes
+  const affectedFolders = new Set();
+  changedFiles.forEach(file => {
+    const folder = file.split('/')[0]; // Extract the first part of the file path as the folder
+    if (folder) {
+      affectedFolders.add(folder);
+    }
+  });
+
+  // Create an array of namespaces based on folder existence and changes
+  const namespaces = [];
+  if (affectedFolders.has('web')) namespaces.push('web');
+  if (affectedFolders.has('back')) namespaces.push('back');
+
+  // Iterate over the namespaces and trigger the workflow
+  for (const namespace of namespaces) {
+    if (ignoredNamespaces[repo_name]?.includes(namespace)) {
+      console.log(`${repo_name}@${namespace} IGNORED.`)
+    } else {
+      await triggerWorkflow(
+        namespace,
+        repo_name,
+        commitMessage,
+        APP_GIT_PAT,
+        SAFE_URL
+      );
+    }
+  }
+  return res.status(200).send('Workflow triggered');
+}
+
+async function handleTag (req, res) {
+  const newTag = req.body.ref.replace('refs/tags/', '');
+
+  // Validate tag format
+  if (!isValidVersionTag(newTag)) {
+    return res.status(400).send('Invalid version tag format. Expected: vN.N.N.N');
+  }
+
+  // Fetch previous valid tag (skip non-version tags)
+  const { data: tags } = await octokit.repos.listTags({
+    owner: req.body.repository.owner.login,
+    repo: repo_name,
+    per_page: 10
+  });
+  const prevTag = tags.find(t => t.name !== newTag && isValidVersionTag(t.name))?.name;
+
+  // Determine namespaces to trigger
+  const namespaces = getNamespacesToTrigger(newTag, prevTag);
+  if (namespaces.length === 0) {
+    return res.status(200).send(`No version increase in ${prevTag || 'any component'}`);
+  }
+
+  // Trigger workflows for selected namespaces
+  for (const namespace of namespaces) {
+    if (!ignoredNamespaces[repo_name]?.includes(namespace)) {
+      await triggerWorkflow(
+        namespace,
+        repo_name,
+        `TAG: ${newTag}`,
+        APP_GIT_PAT,
+        SAFE_URL
+      );
+    }
+  }
+
+  return res.status(200).send(`Workflows triggered for: ${namespaces.join(', ')}`);
+}
+
+// Check if tag matches 'v' followed by 4 numbers (e.g., v12.23.55.32)
+function isValidVersionTag(tag) {
+  return /^v\d+\.\d+\.\d+\.\d+$/.test(tag);
+}
+
+// Compare two valid tags to determine which namespaces to trigger
+// 12.23.55.32
+// 12 - backend package.json minor version
+// 23 - backend commit count
+// 55 - frontend package.json minor version
+// 23 - frontend commit count
+function getNamespacesToTrigger(newTag, prevTag) {
+  const [new1, new2, new3, new4] = newTag.replace('v', '').split('.').map(Number);
+  const [prev1, prev2, prev3, prev4] = prevTag?.replace('v', '').split('.').map(Number) || [0, 0, 0, 0];
+
+  const namespaces = [];
+  if (new1 > prev1 || new2 > prev2) namespaces.push('back');
+  if (new3 > prev3 || new4 > prev4) namespaces.push('web');
+  return namespaces;
+}
 
 async function sendRuntimeEventToStat(triggerIP) {
   try {
