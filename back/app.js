@@ -97,11 +97,11 @@ app.post('/webhook', async (req, res) => {
 
   // Handle version tag pushes (e.g., v12.23.55.32)
   if (eventType === 'push' && req.body.ref.startsWith('refs/tags/v') && !ignoredRepos.includes(repo_name)) {
-    handleTag(req, res)
+    handleTag(req, res, repo_name)
   }
 
   else if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !ignoredRepos.includes(repo_name)) {
-    handlePushMaster(req, res, commitMessage)
+    handlePushMaster(req, res, repo_name, commitMessage)
   } 
   
   else {
@@ -109,7 +109,7 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-async function handlePushMaster (req, res, commitMessage) {
+async function handlePushMaster (req, res, repo_name, commitMessage) {
   // Get the list of files changed in the last commit
   const changedFiles = req.body.head_commit.modified.concat(req.body.head_commit.added);
 
@@ -144,7 +144,7 @@ async function handlePushMaster (req, res, commitMessage) {
   return res.status(200).send('Workflow triggered');
 }
 
-async function handleTag (req, res) {
+async function handleTag (req, res, repo_name) {
   const newTag = req.body.ref.replace('refs/tags/', '');
 
   // Validate tag format
