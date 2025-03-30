@@ -17,7 +17,7 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const STAT_URL = process.env.STAT_URL;
 const SAFE_URL = process.env.SAFE_URL
 
-const ignoredRepos = [
+const pushMasterIgnoredRepos = [
   'githooklib', 
   'githooklib-test',
   'bash',
@@ -46,7 +46,9 @@ const ignoredRepos = [
   'gear',
   'php_oop',
   'grapesJS',
-  'serf', '_dump'];
+  'serf', '_dump',
+  'stat'
+];
 const ignoredNamespaces = {
   faq: ['web']
 }
@@ -96,11 +98,11 @@ app.post('/webhook', async (req, res) => {
   }
 
   // Handle version tag pushes (e.g., v12.23.55.32)
-  if (eventType === 'push' && req.body.ref.startsWith('refs/tags/v') && !ignoredRepos.includes(repo_name)) {
+  if (eventType === 'push' && req.body.ref.startsWith('refs/tags/v')) {
     handleTag(req, res, repo_name)
   }
 
-  else if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !ignoredRepos.includes(repo_name)) {
+  else if (eventType === 'push' && req.body.ref === 'refs/heads/master' && !pushMasterIgnoredRepos.includes(repo_name)) {
     handlePushMaster(req, res, repo_name, commitMessage)
   } 
   
