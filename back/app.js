@@ -58,7 +58,7 @@ const octokit = new Octokit({
   auth: APP_GIT_PAT,
 });
 
-async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_url) {
+async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_url, git_tag) {
 
   try {
     await octokit.actions.createWorkflowDispatch({
@@ -73,6 +73,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
         safe_url: safe_url,
         namespace: namespace,
         stat_url: STAT_URL,
+        git_tag: git_tag
       },
     });
     console.log(`Flow triggered for: ${repo_name}@${namespace}, commit: ${commit_message}`);
@@ -140,7 +141,8 @@ async function handlePushMaster (req, res, repo_name, commitMessage) {
         repo_name,
         commitMessage,
         APP_GIT_PAT,
-        SAFE_URL
+        SAFE_URL,
+        '0.0.0.0'
       );
     }
   }
@@ -177,7 +179,8 @@ async function handleTag (req, res, repo_name) {
         repo_name,
         `TAG: ${newTag}`,
         APP_GIT_PAT,
-        SAFE_URL
+        SAFE_URL,
+        newTag.replace('v', '')
       );
     }
   }
