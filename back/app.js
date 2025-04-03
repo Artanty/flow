@@ -78,6 +78,14 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
     });
     console.log(`Flow triggered for: ${repo_name}@${namespace}, commit: ${commit_message}`);
   } catch (error) {
+    const runtimeErrorPayload = {
+      repo_name: repo_name,
+      namespace,
+      stage: 'DEPLOY',
+      commit: commit_message,
+      error: error
+    }
+    await sendRuntimeErrorToStat(runtimeErrorPayload)
     console.error(`Error triggering workflow for: ${repo_name}@${namespace}`, error);
   }
 }
@@ -218,9 +226,9 @@ async function sendRuntimeEventToStat(triggerIP) {
       eventData: JSON.stringify(
         {
           triggerIP: triggerIP,
-          projectId: process.env.PROJECT_ID,
           slaveRepo: process.env.SLAVE_REPO,
-          commit: process.env.COMMIT
+          commit: process.env.COMMIT,
+
         }
       )
     }
@@ -288,3 +296,44 @@ app.get('/get-updates', async (req, res) => {
 app.listen(PORT, async() => {
   console.log('Server running on port ' + PORT)
 });
+
+async function sendRuntimeErrorToStat(runtimeEventPayload) {
+  try {
+    const payload = {
+      projectId: `${runtimeEventPayload.repo_name}@github`,
+      namespace: runtimeEventPayload.namespace,
+      stage: runtimeEventPayload.stage,
+      eventData: JSON.stringify(
+        {
+          triggerIP: triggerIP || null,
+          slaveRepo: runtimeEventPayload.slave_repo || null,
+          commit: runtimeEventPayload.commit,
+          error: runtimeEventPayload.error
+        }
+      )
+    }
+    await axios.post(`${process.env.STAT_URL}/add-event`, payload);
+    console.log(`ERROR SENT TO @stat: ${runtimeEventPayload.repo_name}@github -> ${runtimeEventPayload.slave_repo} | ${runtimeEventPayload.commit}`)
+    return true
+  } catch (error) {
+    console.error('error in sendRuntimeEventToStat...');
+    if (axios.isAxiosError(error)) {
+      // Handle Axios-specific errors
+      const axiosError = error; // as AxiosError
+      console.error('Axios Error:', {
+          message: axiosError.message,
+          status: axiosError.response?.status,
+          statusText: axiosError.response?.statusText,
+          data: axiosError.response?.data,
+      });
+    } else {
+        // Handle generic errors
+        console.error('Unexpected Error:', error);
+    }
+    return false;
+  }
+}
+
+// repo_name \ project: stat
+// projectId: stat@github
+// projectName: stat@github-back
