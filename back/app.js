@@ -47,7 +47,6 @@ const pushMasterIgnoredRepos = [
   'php_oop',
   'grapesJS',
   'serf', '_dump',
-  'stat',
   'safe'
 ];
 const ignoredNamespaces = {
