@@ -1,35 +1,33 @@
-import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import { handleWebhook } from './webhook.js';
-import {
+const dotenv = require('dotenv');
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require('path');
+const { handleWebhook } = require('./webhook');
+const {
   sendRuntimeEventToStat,
   shouldRunStat,
   getLastExecutedMinute,
   setLastExecutedMinute,
-} from './stat.js';
-import type { UpdateResponse } from './types.js';
+} = require('./stat');
+import type { UpdateResponse } from './types';
+import type { Request, Response } from 'express';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const app = express();
 app.use(cors());
 app.use(bodyParser.json({
-  verify: (req, _res, buf) => {
-    (req as express.Request & { rawBody?: string }).rawBody = buf.toString();
+  verify: (req: Request, _res: Response, buf: Buffer) => {
+    (req as Request & { rawBody?: string }).rawBody = buf.toString();
   }
 }));
+
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const PORT = process.env.PORT || 3000;
 
 app.post('/webhook', handleWebhook);
 
-app.get('/get-updates', async (req, res) => {
+app.get('/get-updates', async (req: Request, res: Response) => {
   const { stat } = req.query;
 
   let sendToStatResult = false;

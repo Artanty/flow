@@ -1,8 +1,8 @@
-import crypto from 'crypto';
-import { Octokit } from '@octokit/rest';
+const crypto = require('crypto');
+const { Octokit } = require('@octokit/rest');
+const { sendRuntimeErrorToStat } = require('./stat');
 import type { Request, Response } from 'express';
-import { sendRuntimeErrorToStat } from './stat.js';
-import type { SignatureResult, WebhookBody } from './types.js';
+import type { SignatureResult, WebhookBody } from './types';
 
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;

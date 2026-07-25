@@ -1,5 +1,5 @@
-import axios from 'axios';
-import type { StatPayload, RuntimeEventPayload } from './types.js';
+const axios = require('axios');
+import type { StatPayload, RuntimeEventPayload } from './types';
 
 let lastExecutedMinute: number | null = null;
 
@@ -30,14 +30,15 @@ export async function sendRuntimeEventToStat(): Promise<boolean> {
     await axios.post(`${process.env.STAT_URL}/add-event`, payload);
     console.log(`SENT TO @stat: ${process.env.PROJECT_ID}@github -> ${process.env.SLAVE_REPO} | ${process.env.COMMIT}`);
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('error in sendRuntimeEventToStat...');
-    if (axios.isAxiosError(error)) {
+    if (axios.isAxiosError(error as Error)) {
+      const axiosError = error as { message: string; response?: { status?: number; statusText?: string; data?: unknown } };
       console.error('Axios Error:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
       });
     } else {
       console.error('Unexpected Error:', error);
@@ -61,14 +62,15 @@ export async function sendRuntimeErrorToStat(runtimeEventPayload: RuntimeEventPa
     await axios.post(`${process.env.STAT_URL}/add-event`, payload);
     console.log(`ERROR SENT TO @stat: ${runtimeEventPayload.repo_name}@github -> ${runtimeEventPayload.slave_repo} | ${runtimeEventPayload.commit}`);
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('error in sendRuntimeErrorToStat...');
-    if (axios.isAxiosError(error)) {
+    if (axios.isAxiosError(error as Error)) {
+      const axiosError = error as { message: string; response?: { status?: number; statusText?: string; data?: unknown } };
       console.error('Axios Error:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
+        message: axiosError.message,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
       });
     } else {
       console.error('Unexpected Error:', error);
