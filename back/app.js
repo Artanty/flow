@@ -81,6 +81,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
     });
     console.log(`Flow triggered for: ${repo_name}@${namespace}, commit: ${commit_message}`);
   } catch (error) {
+    console.log(error.message)
     const runtimeErrorPayload = {
       repo_name: repo_name,
       namespace,
@@ -115,7 +116,20 @@ app.post('/webhook', async (req, res) => {
   // }
 
   if (signature !== calculatedSignature) {
-    return res.status(401).send('Invalid signature');
+    console.error('Webhook signature mismatch:');
+    console.error('  x-hub-signature-256:', signature);
+    console.error('  calculated:', calculatedSignature);
+    console.error('  rawBody length:', req.rawBody ? req.rawBody.length : 'UNDEFINED');
+    console.error('  rawBody first 200 chars:', req.rawBody ? req.rawBody.substring(0, 200) : 'UNDEFINED');
+    console.error('  WEBHOOK_SECRET defined:', !!WEBHOOK_SECRET, 'length:', WEBHOOK_SECRET ? WEBHOOK_SECRET.length : 0);
+    return res.status(401).json({
+      error: 'Invalid signature',
+      rawBodyDefined: !!req.rawBody,
+      rawBodyLength: req.rawBody ? req.rawBody.length : 0,
+      secretLength: WEBHOOK_SECRET ? WEBHOOK_SECRET.length : 0,
+      receivedSignature: signature,
+      calculatedSignature: calculatedSignature,
+    });
   }
 
   // Handle version tag pushes (e.g., v12.23.55.32)
