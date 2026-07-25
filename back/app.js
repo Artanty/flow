@@ -166,6 +166,7 @@ async function handlePushMaster (req, res, repo_name, commitMessage) {
 }
 
 async function handleTag (req, res, repo_name) {
+  console.log('func handleTag')
   const newTag = req.body.ref.replace('refs/tags/', '');
 
   // Validate tag format
