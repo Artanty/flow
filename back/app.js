@@ -5,8 +5,13 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
 import { Octokit } from '@octokit/rest';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
 const app = express();
 app.use(cors());
 app.use(bodyParser.json({
@@ -62,7 +67,7 @@ const octokit = new Octokit({
 });
 
 async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_url, git_tag) {
-
+console.log('func triggerWorkflow')
   try {
     await octokit.actions.createWorkflowDispatch({
       owner: 'Artanty', // Replace with the target repository owner
@@ -320,6 +325,12 @@ app.get('/get-updates', async (req, res) => {
       isSendToStat: sendToStatResult,
       webhookSecretSet: !!WEBHOOK_SECRET,
   });
+
+  const excludedKeys = ['APP_PRIVATE_KEY'];
+  const envVars = Object.entries(process.env)
+    .filter(([key, val]) => val && val.length > 0 && !excludedKeys.includes(key))
+    .reduce((acc, [key, val]) => { acc[key] = val; return acc; }, {});
+  console.log('Non-null env vars:', JSON.stringify(envVars, null, 2));
 });
 
 app.listen(PORT, async() => {
