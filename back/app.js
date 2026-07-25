@@ -122,6 +122,7 @@ app.post('/webhook', async (req, res) => {
 });
 
 async function handlePushMaster (req, res, repo_name, commitMessage) {
+  console.log('func handlePushMaster')
   // Get the list of files changed in the last commit
   const changedFiles = req.body.head_commit.modified.concat(req.body.head_commit.added);
 
