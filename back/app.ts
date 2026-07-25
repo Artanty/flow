@@ -3,14 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-const { handleWebhook } = require('./webhook');
+const { handleWebhook } = require('./src/webhook');
 const {
   sendRuntimeEventToStat,
   shouldRunStat,
   getLastExecutedMinute,
   setLastExecutedMinute,
-} = require('./stat');
-import type { UpdateResponse } from './types';
+} = require('./src/stat');
+import type { UpdateResponse } from './src/types';
 import type { Request, Response } from 'express';
 
 const app = express();
@@ -21,7 +21,7 @@ app.use(bodyParser.json({
   }
 }));
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const PORT = process.env.PORT || 3000;
 
