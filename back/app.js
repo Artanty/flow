@@ -227,6 +227,7 @@ function getNamespacesToTrigger(newTag, prevTag) {
 }
 
 async function sendRuntimeEventToStat(triggerIP) {
+  console.log('func sendRuntimeEventToStat')
   try {
     const payload = {
       projectId: `${process.env.PROJECT_ID}@github`,
