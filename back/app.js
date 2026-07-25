@@ -249,7 +249,7 @@ function getNamespacesToTrigger(newTag, prevTag) {
   return namespaces;
 }
 
-async function sendRuntimeEventToStat(triggerIP) {
+async function sendRuntimeEventToStat() {
   console.log('func sendRuntimeEventToStat')
   try {
     const payload = {
@@ -258,7 +258,6 @@ async function sendRuntimeEventToStat(triggerIP) {
       stage: 'RUNTIME',
       eventData: JSON.stringify(
         {
-          triggerIP: triggerIP,
           slaveRepo: process.env.SLAVE_REPO,
           commit: process.env.COMMIT,
 
@@ -310,20 +309,25 @@ app.get('/get-updates', async (req, res) => {
 
   // Check if stat=true is in the URL params
   if (stat === 'true') {
-      sendToStatResult = await sendRuntimeEventToStat(clientIP);
+      sendToStatResult = await sendRuntimeEventToStat();
   } else {
       // If stat is not true, check the current time and whether the function was already called this minute
       if (shouldRunStat(currentMinute) && lastExecutedMinute !== currentMinute) {
           lastExecutedMinute = currentMinute; // Update the last executed minute
-          sendToStatResult = await sendRuntimeEventToStat(clientIP);
+      sendToStatResult = await sendRuntimeEventToStat();
       }
   }
 
   res.json({
       trigger: clientIP,
-      PORT: process.env.PORT,
       isSendToStat: sendToStatResult,
       webhookSecretSet: !!WEBHOOK_SECRET,
+      domain: process.env.VERCEL_URL,
+      version: process.env.TAG_VERSION,
+      commit_message: process.env.COMMIT,
+      projectId: process.env.PROJECT_ID,
+      slaveRepo: process.env.SLAVE_REPO,
+      namespace: process.env.NAMESPACE,
   });
 
   const excludedKeys = ['APP_PRIVATE_KEY'];
