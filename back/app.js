@@ -345,7 +345,7 @@ async function sendRuntimeErrorToStat(runtimeEventPayload) {
       stage: runtimeEventPayload.stage,
       eventData: JSON.stringify(
         {
-          triggerIP: triggerIP || null,
+          triggerIP: 'triggerIP' || null,
           slaveRepo: runtimeEventPayload.slave_repo || null,
           commit: runtimeEventPayload.commit,
           error: runtimeEventPayload.error
