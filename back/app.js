@@ -9,7 +9,11 @@ import { Octokit } from '@octokit/rest';
 dotenv.config();
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
 
 const PORT = process.env.PORT || 3000;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
@@ -99,7 +103,7 @@ app.post('/webhook', async (req, res) => {
   }
 
   const repo_name = req.body.repository.name;
-  const payload = JSON.stringify(req.body);
+  const payload = req.rawBody;
   const signature = req.headers['x-hub-signature-256'];
   const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(payload).digest('hex');
   const calculatedSignature = `sha256=${hmac}`;
