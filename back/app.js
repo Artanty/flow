@@ -90,6 +90,7 @@ async function triggerWorkflow(namespace, repo_name, commit_message, pat, safe_u
 }
 
 app.post('/webhook', async (req, res) => {
+  console.log('webhook res.body')
   console.log(res.body)
   const repo_name = req.body.repository.name;
   const payload = JSON.stringify(req.body);
