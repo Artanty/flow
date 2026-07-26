@@ -1,18 +1,13 @@
 const axios = require('axios');
 import type { StatPayload, RuntimeEventPayload } from './types';
 
-let lastExecutedMinute: number | null = null;
+const STAT_INTERVAL_MS = 15 * 60 * 1000;
 
-export function shouldRunStat(currentMinute: number): boolean {
-  return [1, 15, 30, 45].includes(currentMinute);
-}
-
-export function getLastExecutedMinute(): number | null {
-  return lastExecutedMinute;
-}
-
-export function setLastExecutedMinute(minute: number): void {
-  lastExecutedMinute = minute;
+export function startStatInterval(): void {
+  setInterval(async () => {
+    await sendRuntimeEventToStat();
+  }, STAT_INTERVAL_MS);
+  console.log(`Stat interval started: every ${STAT_INTERVAL_MS / 60000} minutes`);
 }
 
 export async function sendRuntimeEventToStat(): Promise<boolean> {

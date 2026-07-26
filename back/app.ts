@@ -8,9 +8,7 @@ const bodyParser = require('body-parser');
 const { handleWebhook } = require('./src/webhook');
 const {
   sendRuntimeEventToStat,
-  shouldRunStat,
-  getLastExecutedMinute,
-  setLastExecutedMinute,
+  startStatInterval,
 } = require('./src/stat');
 import type { UpdateResponse } from './src/types';
 import type { Request, Response } from 'express';
@@ -31,24 +29,17 @@ app.get('/get-updates', async (req: Request, res: Response) => {
 
   let sendToStatResult = false;
 
-  const now = new Date();
-  const currentMinute = now.getMinutes();
-
   if (stat === 'true') {
       sendToStatResult = await sendRuntimeEventToStat();
-  } else {
-      if (shouldRunStat(currentMinute) && getLastExecutedMinute() !== currentMinute) {
-          setLastExecutedMinute(currentMinute);
-          sendToStatResult = await sendRuntimeEventToStat();
-      }
   }
 
   const response: UpdateResponse = {
-      commit_id: '',
       domain: process.env.VERCEL_URL,
       version: process.env.TAG_VERSION,
+      commit_id: process.env.COMMIT_ID,
       commit_message: process.env.COMMIT,
       project_id: process.env.PROJECT_ID,
+      slave_acc: process.env.SLAVE_ACC,
       slave_repo: process.env.SLAVE_REPO,
       namespace: process.env.NAMESPACE,
   };
@@ -58,14 +49,9 @@ app.get('/get-updates', async (req: Request, res: Response) => {
   }
 
   res.json(response);
-
-  const excludedKeys = ['APP_PRIVATE_KEY'];
-  const envVars = Object.entries(process.env)
-    .filter(([key, val]) => val && val.length > 0 && !excludedKeys.includes(key))
-    .reduce((acc, [key, val]) => { acc[key] = val!; return acc; }, {} as Record<string, string>);
-  console.log('Non-null env vars:', JSON.stringify(envVars, null, 2));
 });
 
 app.listen(PORT, async () => {
   console.log('Server running on port ' + PORT);
+  startStatInterval();
 });

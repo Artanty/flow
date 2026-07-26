@@ -1,9 +1,10 @@
 export interface UpdateResponse {
   domain?: string;
   version?: string;
-  commit_id: string;
+  commit_id?: string;
   commit_message?: string;
   project_id?: string;
+  slave_acc?: string;
   slave_repo?: string;
   namespace?: string;
   is_sent_to_stat?: boolean;
