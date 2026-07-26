@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 import type { StatPayload, RuntimeEventPayload } from './types';
 
 const STAT_INTERVAL_MS = 15 * 60 * 1000;
