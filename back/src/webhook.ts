@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const { Octokit } = require('@octokit/rest');
 const { sendRuntimeErrorToStat } = require('./stat');
 import type { Request, Response } from 'express';
 import type { SignatureResult, WebhookBody } from './types';
@@ -9,9 +8,15 @@ const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const STAT_URL = process.env.STAT_URL;
 const SAFE_URL = process.env.SAFE_URL;
 
-const octokit = new Octokit({
-  auth: APP_GIT_PAT,
-});
+let octokit: any = null;
+
+async function getOctokit() {
+  if (!octokit) {
+    const { Octokit } = await import('@octokit/rest');
+    octokit = new Octokit({ auth: APP_GIT_PAT });
+  }
+  return octokit;
+}
 
 export const pushMasterIgnoredRepos: string[] = [
   'githooklib',
@@ -121,7 +126,7 @@ export async function triggerWorkflow(
 ): Promise<void> {
   console.log('func triggerWorkflow');
   try {
-    await octokit.actions.createWorkflowDispatch({
+    await (await getOctokit()).actions.createWorkflowDispatch({
       owner: 'Artanty',
       repo: 'serf',
       workflow_id: 'deploy.yml',
@@ -196,7 +201,7 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
     return;
   }
 
-  const { data: tags } = await octokit.repos.listTags({
+  const { data: tags } = await (await getOctokit()).repos.listTags({
     owner: body.repository.owner.login,
     repo: repo_name,
     per_page: 10
