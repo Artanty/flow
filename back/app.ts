@@ -21,7 +21,7 @@ app.use(bodyParser.json({
   }
 }));
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const PORT = process.env.PORT || 3000;
 
