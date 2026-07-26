@@ -14,7 +14,6 @@ const {
 } = require('./src/stat');
 import type { UpdateResponse } from './src/types';
 import type { Request, Response } from 'express';
-
 const app = express();
 app.use(cors());
 app.use(bodyParser.json({
