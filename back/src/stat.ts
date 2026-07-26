@@ -42,6 +42,7 @@ export async function sendRuntimeEventToStat(): Promise<boolean> {
   }
 }
 
+
 export async function sendRuntimeErrorToStat(runtimeEventPayload: RuntimeEventPayload): Promise<boolean> {
   try {
     const payload: StatPayload = {
