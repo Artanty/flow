@@ -1,8 +1,10 @@
 const dotenv = require('dotenv');
+const path = require('path');
+dotenv.config({ path: path.join(process.cwd(), '.env') });
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
 const { handleWebhook } = require('./src/webhook');
 const {
   sendRuntimeEventToStat,
@@ -14,14 +16,13 @@ import type { UpdateResponse } from './src/types';
 import type { Request, Response } from 'express';
 
 const app = express();
+
 app.use(cors());
 app.use(bodyParser.json({
   verify: (req: Request, _res: Response, buf: Buffer) => {
     (req as Request & { rawBody?: string }).rawBody = buf.toString();
   }
 }));
-
-dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const PORT = process.env.PORT || 3000;
 
