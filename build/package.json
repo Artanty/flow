@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "devDependencies": {
-    "githooklib": "^1.2.7"
+  "dependencies": {
+    "githooklib": "^1.3.1"
   }
 }
