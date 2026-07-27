@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { sendRuntimeErrorToStat } = require('./stat');
+const { getNamespacesToTrigger, isValidVersionTag } = require('githooklib/lib/tag-diff');
 import type { Request, Response } from 'express';
 import type { SignatureResult, WebhookBody } from './types';
 
@@ -228,18 +229,4 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
   }
 
   res.status(200).send(`Workflows triggered for: ${namespaces.join(', ')}`);
-}
-
-export function isValidVersionTag(tag: string): boolean {
-  return /^v\d+\.\d+\.\d+\.\d+$/.test(tag);
-}
-
-export function getNamespacesToTrigger(newTag: string, prevTag?: string): string[] {
-  const [new1, new2, new3, new4] = newTag.replace('v', '').split('.').map(Number);
-  const [prev1, prev2, prev3, prev4] = prevTag?.replace('v', '').split('.').map(Number) || [0, 0, 0, 0];
-
-  const namespaces: string[] = [];
-  if (new1 > prev1 || new2 > prev2) namespaces.push('back');
-  if (new3 > prev3 || new4 > prev4) namespaces.push('web');
-  return namespaces;
 }
