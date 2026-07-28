@@ -39,17 +39,49 @@ export interface SignatureResult {
 
 export interface WebhookBody {
   ref: string;
+  before: string;
+  after: string;
   repository: {
     name: string;
+    full_name: string;
     owner: {
+      name: string;
+      email: string;
       login: string;
+      id: number;
     };
   };
-  head_commit: {
-    message: string;
-    modified: string[];
-    added: string[];
+  pusher: {
+    name: string;
+    email: string;
   };
+  forced: boolean;
+  created: boolean;
+  deleted: boolean;
+  base_ref: string | null;
+  compare: string;
+  commits: {
+    id: string;
+    message: string;
+    timestamp: string;
+    url: string;
+    author: { name: string; email: string; username?: string };
+    committer: { name: string; email: string; username?: string };
+    added: string[];
+    removed: string[];
+    modified: string[];
+  }[];
+  head_commit: {
+    id: string;
+    message: string;
+    timestamp: string;
+    url: string;
+    author: { name: string; email: string; username?: string };
+    committer: { name: string; email: string; username?: string };
+    added: string[];
+    removed: string[];
+    modified: string[];
+  } | null;
 }
 
 export interface TriggerWorkflowProps {
