@@ -198,7 +198,7 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
   const newTag = body.ref.replace('refs/tags/', '');
 
   if (!isValidVersionTag(newTag)) {
-    res.status(400).send('Invalid version tag format. Expected: vN.N.N.N');
+    res.status(400).send('Invalid version tag format. Expected: vN.N.N.N.N.N');
     return;
   }
 

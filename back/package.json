@@ -1,7 +1,7 @@
 {
   "name": "flow",
   "private": false,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "scripts": {
     "start": "node dist/app.js",
     "build": "tsc"
@@ -15,6 +15,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "githooklib": "^2.1.0",
     "octokit": "^3.1.2"
   },
   "devDependencies": {
