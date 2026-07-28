@@ -227,6 +227,5 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
       );
     }
   }
-
   res.status(200).send(`Workflows triggered for: ${namespaces.join(', ')}`);
 }
