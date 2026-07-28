@@ -22,7 +22,9 @@ export interface RuntimeEventPayload {
   namespace: string;
   stage: string;
   commit: string;
+  tag?: string;
   slave_repo?: string;
+  data?: any;
   error?: unknown;
 }
 
@@ -48,4 +50,13 @@ export interface WebhookBody {
     modified: string[];
     added: string[];
   };
+}
+
+export interface TriggerWorkflowProps {
+  namespace: string,
+  repo_name: string,
+  commit_message: string,
+  pat: string | undefined,
+  safe_url: string | undefined,
+  git_tag: string
 }

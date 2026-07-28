@@ -1,8 +1,7 @@
-const crypto = require('crypto');
 const { sendRuntimeErrorToStat } = require('./stat');
-const { getNamespacesToTrigger, isValidVersionTag } = require('githooklib/lib/tag-diff');
+const { WebhookError, validateWebhookConfig, validateSignature, validateTagFormat, validateAndGetNamespaces } = require('./validation');
 import type { Request, Response } from 'express';
-import type { SignatureResult, WebhookBody } from './types';
+import type { RuntimeEventPayload, TriggerWorkflowProps, WebhookBody } from './types';
 
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
@@ -56,75 +55,67 @@ export const ignoredNamespaces: Record<string, string[]> = {
   faq: ['web']
 };
 
-export function verifySignature(rawBody: string, signature: string | undefined): SignatureResult {
-  if (!WEBHOOK_SECRET) {
-    return { valid: false, error: 'WEBHOOK_SECRET is not set' };
-  }
-  const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET).update(rawBody).digest('hex');
-  const calculatedSignature = `sha256=${hmac}`;
-  return {
-    valid: signature === calculatedSignature,
-    signature,
-    calculatedSignature,
-    rawBodyLength: rawBody ? rawBody.length : 0,
-    secretLength: WEBHOOK_SECRET.length,
-  };
-}
-
-export function handleWebhook(req: Request, res: Response): void {
-  console.log('webhook req.body');
-  console.log(req.body);
-
-  if (!WEBHOOK_SECRET) {
-    console.error('WEBHOOK_SECRET is not set. Please set APP_WEBHOOK_SECRET environment variable.');
-    res.status(500).send('Server misconfiguration: WEBHOOK_SECRET is not set');
-    return;
-  }
-
+export async function handleWebhook(req: Request, res: Response): Promise<void> {
   const body = req.body as WebhookBody;
   const repo_name = body.repository.name;
-  const payload = (req as Request & { rawBody?: string }).rawBody ?? '';
-  const signature = req.headers['x-hub-signature-256'] as string | undefined;
   const eventType = req.headers['x-github-event'] as string;
-  const commitMessage = body.head_commit.message.trim();
+  const commitMessage = body.head_commit?.message?.trim() || '';
 
-  const sigResult = verifySignature(payload, signature);
+  try {
+    console.log('webhook req.body');
+    console.log(req.body);
 
-  if (!sigResult.valid) {
-    console.error('Webhook signature mismatch:');
-    console.error('  x-hub-signature-256:', sigResult.signature);
-    console.error('  calculated:', sigResult.calculatedSignature);
-    console.error('  rawBody length:', sigResult.rawBodyLength);
-    console.error('  rawBody first 200 chars:', payload ? payload.substring(0, 200) : 'UNDEFINED');
-    console.error('  WEBHOOK_SECRET defined:', true, 'length:', sigResult.secretLength);
-    res.status(401).json({
-      error: 'Invalid signature',
-      rawBodyDefined: !!payload,
-      rawBodyLength: sigResult.rawBodyLength,
-      secretLength: sigResult.secretLength,
-      receivedSignature: sigResult.signature,
-      calculatedSignature: sigResult.calculatedSignature,
+    validateWebhookConfig(WEBHOOK_SECRET);
+
+    const payload = (req as Request & { rawBody?: string }).rawBody ?? '';
+    const signature = req.headers['x-hub-signature-256'] as string | undefined;
+    validateSignature(payload, signature, WEBHOOK_SECRET);
+
+    if (eventType === 'push' && body.ref.startsWith('refs/tags/v')) {
+      await handleTag(req, res, repo_name);
+    // } else if (eventType === 'push' && body.ref === 'refs/heads/master' && !pushMasterIgnoredRepos.includes(repo_name)) {
+    //   await handlePushMaster(req, res, repo_name, commitMessage);
+    } else {
+      res.status(200).send('Event ignored');
+    }
+  } catch (error) {
+    const webhookError = error instanceof WebhookError
+      ? error
+      : new WebhookError('Unexpected webhook error', 500, { originalError: (error as Error).message });
+
+    console.error(`Webhook error: ${webhookError.message}`);
+
+    const runtimeErrorPayload: RuntimeEventPayload = {
+      repo_name,
+      namespace: 'webhook',
+      stage: 'WEBHOOK_VALIDATION',
+      commit: commitMessage,
+      tag: body?.ref?.startsWith('refs/tags/') ? body.ref.replace('refs/tags/', '') : undefined,
+      data: {
+        ...webhookError.details,
+        eventType,
+        repo_name,
+      },
+      error: webhookError.message,
+    };
+    sendRuntimeErrorToStat(runtimeErrorPayload);
+
+    res.status(webhookError.statusCode).json({
+      error: webhookError.message,
+      ...webhookError.details,
     });
-    return;
-  }
-
-  if (eventType === 'push' && body.ref.startsWith('refs/tags/v')) {
-    handleTag(req, res, repo_name);
-  } else if (eventType === 'push' && body.ref === 'refs/heads/master' && !pushMasterIgnoredRepos.includes(repo_name)) {
-    handlePushMaster(req, res, repo_name, commitMessage);
-  } else {
-    res.status(200).send('Event ignored');
   }
 }
 
-export async function triggerWorkflow(
-  namespace: string,
-  repo_name: string,
-  commit_message: string,
-  pat: string | undefined,
-  safe_url: string | undefined,
-  git_tag: string
-): Promise<void> {
+export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void> {
+  const { 
+    namespace,
+    repo_name,
+    commit_message,
+    pat,
+    safe_url,
+    git_tag
+  } = data;
   console.log('func triggerWorkflow');
   try {
     await (await getOctokit()).actions.createWorkflowDispatch({
@@ -146,11 +137,13 @@ export async function triggerWorkflow(
   } catch (error) {
     const err = error as Error;
     console.log(err.message);
-    const runtimeErrorPayload = {
+    const runtimeErrorPayload: RuntimeEventPayload = {
       repo_name: repo_name,
       namespace,
       stage: 'DEPLOY',
       commit: commit_message,
+      tag: git_tag !== '0.0.0.0' ? `v${git_tag}` : undefined,
+      data: { git_tag },
       error: error
     };
     await sendRuntimeErrorToStat(runtimeErrorPayload);
@@ -158,47 +151,30 @@ export async function triggerWorkflow(
   }
 }
 
-async function handlePushMaster(req: Request, res: Response, repo_name: string, commitMessage: string): Promise<void> {
-  console.log('func handlePushMaster');
-  const body = req.body as WebhookBody;
-  const changedFiles = body.head_commit.modified.concat(body.head_commit.added);
-
-  const affectedFolders = new Set<string>();
-  changedFiles.forEach((file: string) => {
-    const folder = file.split('/')[0];
-    if (folder) {
-      affectedFolders.add(folder);
-    }
-  });
-
-  const namespaces: string[] = [];
-  if (affectedFolders.has('web')) namespaces.push('web');
-  if (affectedFolders.has('back')) namespaces.push('back');
-
-  for (const namespace of namespaces) {
-    if (ignoredNamespaces[repo_name]?.includes(namespace)) {
-      console.log(`${repo_name}@${namespace} IGNORED.`);
-    } else {
-      await triggerWorkflow(
-        namespace,
-        repo_name,
-        commitMessage,
-        APP_GIT_PAT,
-        SAFE_URL,
-        '0.0.0.0'
-      );
-    }
-  }
-  res.status(200).send('Workflow triggered');
-}
-
 async function handleTag(req: Request, res: Response, repo_name: string): Promise<void> {
   console.log('func handleTag');
   const body = req.body as WebhookBody;
+  console.log(req.body)
   const newTag = body.ref.replace('refs/tags/', '');
 
-  if (!isValidVersionTag(newTag)) {
-    res.status(400).send('Invalid version tag format. Expected: vN.N.N.N.N.N');
+  try {
+    validateTagFormat(newTag);
+  } catch (error) {
+    const webhookError = error instanceof WebhookError
+      ? error
+      : new WebhookError('Invalid tag format', 400, { tag: newTag });
+
+    const runtimeErrorPayload: RuntimeEventPayload = {
+      repo_name,
+      namespace: 'tag',
+      stage: 'TAG_VALIDATION',
+      commit: '',
+      tag: newTag,
+      data: webhookError.details,
+      error: webhookError.message,
+    };
+    sendRuntimeErrorToStat(runtimeErrorPayload);
+    res.status(webhookError.statusCode).json({ error: webhookError.message, ...webhookError.details });
     return;
   }
 
@@ -207,25 +183,44 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
     repo: repo_name,
     per_page: 10
   });
-  const prevTag = tags.find((t: { name: string }) => t.name !== newTag && isValidVersionTag(t.name))?.name;
 
-  const namespaces = getNamespacesToTrigger(newTag, prevTag);
-  if (namespaces.length === 0) {
-    res.status(200).send(`No version increase in ${prevTag || 'any component'}`);
-    return;
-  }
+  const isValidTag = (t: { name: string }) => {
+    try { validateTagFormat(t.name); return true; }
+    catch { return false; }
+  };
+  const prevTag = tags.find((t: { name: string }) => t.name !== newTag && isValidTag(t))?.name;
 
-  for (const namespace of namespaces) {
-    if (!ignoredNamespaces[repo_name]?.includes(namespace)) {
-      await triggerWorkflow(
-        namespace,
-        repo_name,
-        `TAG: ${newTag}`,
-        APP_GIT_PAT,
-        SAFE_URL,
-        newTag.replace('v', '')
-      );
+  try {
+    const namespaces = validateAndGetNamespaces(newTag, prevTag);
+
+    for (const namespace of namespaces) {
+      if (!ignoredNamespaces[repo_name]?.includes(namespace)) {
+        await triggerWorkflow({
+          namespace,
+          repo_name,
+          commit_message:`TAG: ${newTag}`,
+          pat: APP_GIT_PAT,
+          safe_url: SAFE_URL,
+          git_tag: newTag.replace('v', '')
+        });
+      }
     }
+    res.status(200).send(`Workflows triggered for: ${namespaces.join(', ')}`);
+  } catch (error) {
+    const webhookError = error instanceof WebhookError
+      ? error
+      : new WebhookError('Tag processing error', 500, { tag: newTag, prevTag });
+
+    const runtimeErrorPayload: RuntimeEventPayload = {
+      repo_name,
+      namespace: 'tag',
+      stage: 'TAG_VALIDATION',
+      commit: '',
+      tag: newTag,
+      data: { ...webhookError.details, prevTag },
+      error: webhookError.message,
+    };
+    sendRuntimeErrorToStat(runtimeErrorPayload);
+    res.status(webhookError.statusCode).json({ error: webhookError.message, ...webhookError.details });
   }
-  res.status(200).send(`Workflows triggered for: ${namespaces.join(', ')}`);
 }
