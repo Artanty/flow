@@ -74,8 +74,6 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
 
     if (eventType === 'push' && body.ref.startsWith('refs/tags/v')) {
       await handleTag(req, res, repo_name);
-    // } else if (eventType === 'push' && body.ref === 'refs/heads/master' && !pushMasterIgnoredRepos.includes(repo_name)) {
-    //   await handlePushMaster(req, res, repo_name, commitMessage);
     } else {
       res.status(200).send('Event ignored');
     }
@@ -155,6 +153,7 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
 async function handleTag(req: Request, res: Response, repo_name: string): Promise<void> {
   console.log('func handleTag');
   const body = req.body as WebhookBody;
+  const headCommitMessage = req.body.head_commit.message;
   console.log(req.body)
   const newTag = body.ref.replace('refs/tags/', '');
 
@@ -199,7 +198,7 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
         await triggerWorkflow({
           namespace,
           repo_name,
-          commit_message:`TAG: ${newTag}`,
+          commit_message: headCommitMessage,
           pat: APP_GIT_PAT,
           safe_url: SAFE_URL,
           git_tag: newTag.replace('v', '')
