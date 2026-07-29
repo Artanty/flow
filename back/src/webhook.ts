@@ -19,7 +19,7 @@ async function getOctokit() {
 }
 
 export const pushMasterIgnoredRepos: string[] = [
-  
+
   'githooklib',
   'githooklib-test',
   'bash',
@@ -48,7 +48,8 @@ export const pushMasterIgnoredRepos: string[] = [
   'gear',
   'php_oop',
   'grapesJS',
-  'serf', '_dump',
+  'serf',
+  '_dump',
   'safe'
 ];
 
