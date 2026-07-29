@@ -159,38 +159,19 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
 
   try {
     validateTagFormat(newTag);
-  } catch (error) {
-    const webhookError = error instanceof WebhookError
-      ? error
-      : new WebhookError('Invalid tag format', 400, { tag: newTag });
 
-    const runtimeErrorPayload: RuntimeEventPayload = {
-      repo_name,
-      namespace: 'tag',
-      stage: 'TAG_VALIDATION',
-      commit: '',
-      tag: newTag,
-      data: webhookError.details,
-      error: webhookError.message,
+    const { data: tags } = await (await getOctokit()).repos.listTags({
+      owner: body.repository.owner.login,
+      repo: repo_name,
+      per_page: 10
+    });
+
+    const isValidTag = (t: { name: string }) => {
+      try { validateTagFormat(t.name); return true; }
+      catch { return false; }
     };
-    sendRuntimeErrorToStat(runtimeErrorPayload);
-    res.status(webhookError.statusCode).json({ error: webhookError.message, ...webhookError.details });
-    return;
-  }
+    const prevTag = tags.find((t: { name: string }) => t.name !== newTag && isValidTag(t))?.name;
 
-  const { data: tags } = await (await getOctokit()).repos.listTags({
-    owner: body.repository.owner.login,
-    repo: repo_name,
-    per_page: 10
-  });
-
-  const isValidTag = (t: { name: string }) => {
-    try { validateTagFormat(t.name); return true; }
-    catch { return false; }
-  };
-  const prevTag = tags.find((t: { name: string }) => t.name !== newTag && isValidTag(t))?.name;
-
-  try {
     const namespaces = validateAndGetNamespaces(newTag, prevTag);
 
     for (const namespace of namespaces) {
@@ -209,7 +190,7 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
   } catch (error) {
     const webhookError = error instanceof WebhookError
       ? error
-      : new WebhookError('Tag processing error', 500, { tag: newTag, prevTag });
+      : new WebhookError('Tag processing error', 500, { tag: newTag });
 
     const runtimeErrorPayload: RuntimeEventPayload = {
       repo_name,
@@ -217,7 +198,7 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
       stage: 'TAG_VALIDATION',
       commit: '',
       tag: newTag,
-      data: { ...webhookError.details, prevTag },
+      data: webhookError.details,
       error: webhookError.message,
     };
     sendRuntimeErrorToStat(runtimeErrorPayload);
