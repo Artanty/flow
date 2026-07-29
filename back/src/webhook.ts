@@ -19,7 +19,6 @@ async function getOctokit() {
 }
 
 export const pushMasterIgnoredRepos: string[] = [
-
   'githooklib',
   'githooklib-test',
   'bash',
