@@ -132,7 +132,7 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
         git_tag: git_tag
       },
     });
-    console.log(`Flow triggered for: ${repo_name}@${namespace}, commit: ${commit_message}`);
+    console.log(`by: ${repo_name}@${namespace} | v${git_tag} | ${commit_message}`);
   } catch (error) {
     const err = error as Error;
     console.log(err.message);
@@ -141,7 +141,7 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
       namespace,
       stage: 'DEPLOY',
       commit: commit_message,
-      tag: git_tag !== '0.0.0.0' ? `v${git_tag}` : undefined,
+      tag: git_tag,
       data: { git_tag },
       error: error
     };
