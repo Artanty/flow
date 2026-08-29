@@ -1,7 +1,7 @@
 {
   "name": "flow",
   "private": false,
-  "version": "0.1.17",
+  "version": "0.1.18",
   "scripts": {
     "start": "node dist/app.js",
     "build": "tsc"
@@ -16,7 +16,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "githooklib": "^2.1.1",
-    "octokit": "^3.1.2"
+    "octokit": "^3.1.2",
+    "shared-back": "file:../../shared/back"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.6",
