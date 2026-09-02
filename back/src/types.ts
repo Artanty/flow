@@ -90,5 +90,6 @@ export interface TriggerWorkflowProps {
   commit_message: string,
   pat: string | undefined,
   safe_url: string | undefined,
-  git_tag: string
+  git_tag: string,
+  key_back_url: string | undefined
 }

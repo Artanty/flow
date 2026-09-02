@@ -7,6 +7,7 @@ const APP_GIT_PAT = process.env.APP_GIT_PAT;
 const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const STAT_URL = process.env.STAT_URL;
 const SAFE_URL = process.env.SAFE_URL;
+const KEY_BACK_URL = process.env.KEY_BACK_URL;
 
 let octokit: any = null;
 
@@ -113,7 +114,8 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
     commit_message,
     pat,
     safe_url,
-    git_tag
+    git_tag,
+    key_back_url
   } = data;
   console.log('func triggerWorkflow');
   try {
@@ -129,7 +131,8 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
         safe_url: safe_url!,
         namespace: namespace,
         stat_url: STAT_URL!,
-        git_tag: git_tag
+        git_tag: git_tag,
+        key_back_url: key_back_url!
       },
     });
     console.log(`by: ${repo_name}@${namespace} | v${git_tag} | ${commit_message}`);
@@ -182,7 +185,8 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
           commit_message: headCommitMessage,
           pat: APP_GIT_PAT,
           safe_url: SAFE_URL,
-          git_tag: newTag.replace('v', '')
+          git_tag: newTag.replace('v', ''),
+          key_back_url: KEY_BACK_URL
         });
       }
     }
