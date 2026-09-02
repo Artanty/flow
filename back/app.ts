@@ -43,6 +43,19 @@ app.get('/get-updates', async (req: Request, res: Response) => {
       slave_acc: process.env.SLAVE_ACC,
       slave_repo: process.env.SLAVE_REPO,
       namespace: process.env.NAMESPACE,
+      envs: {
+          PROJECT_ID: !!process.env.PROJECT_ID,
+          SLAVE_REPO: !!process.env.SLAVE_REPO,
+          NAMESPACE: !!process.env.NAMESPACE,
+          COMMIT: !!process.env.COMMIT,
+          STAT_URL: !!process.env.STAT_URL,
+          TAG_VERSION: !!process.env.TAG_VERSION,
+          PORT: !!process.env.PORT,
+          KEY_BACK_URL: !!process.env.KEY_BACK_URL,
+          SAFE_URL: !!process.env.SAFE_URL,
+          SURGE_DOMAIN: !!process.env.SURGE_DOMAIN,
+          SURGE_TOKEN: !!process.env.SURGE_TOKEN,
+      },
   };
 
   if (sendToStatResult) {

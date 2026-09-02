@@ -8,6 +8,7 @@ export interface UpdateResponse {
   slave_repo?: string;
   namespace?: string;
   is_sent_to_stat?: boolean;
+  envs?: Record<string, boolean>;
 }
 
 export interface StatPayload {
