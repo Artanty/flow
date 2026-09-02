@@ -58,6 +58,7 @@ app.get('/get-updates', async (req: Request, res: Response) => {
       },
   };
 
+  
   if (sendToStatResult) {
       response.is_sent_to_stat = sendToStatResult;
   }
