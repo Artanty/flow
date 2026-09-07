@@ -56,7 +56,6 @@ export const pushMasterIgnoredRepos: string[] = [
 
 export const ignoredNamespaces: Record<string, string[]> = {
   faq: ['web'],
-  safe: ['web']
 };
 
 export async function handleWebhook(req: Request, res: Response): Promise<void> {
