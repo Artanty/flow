@@ -51,7 +51,6 @@ export const pushMasterIgnoredRepos: string[] = [
   'grapesJS',
   'serf',
   '_dump',
-  'safe'
 ];
 
 export const ignoredNamespaces: Record<string, string[]> = {
