@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { handleWebhook } = require('./src/webhook');
+const { handleRetrigger } = require('./src/rerun');
 const {
   sendRuntimeEventToStat,
   startStatInterval,
@@ -24,6 +25,10 @@ app.use(bodyParser.json({
 const PORT = process.env.PORT || 3000;
 
 app.post('/webhook', handleWebhook);
+
+// Re-runs the latest `Deploy <project> | v...` run of Artanty/serf/deploy.yml.
+// Requires `Authorization: Bearer <APP_TRIGGER_TOKEN>`.
+app.post('/retrigger', handleRetrigger);
 
 app.get('/get-updates', async (req: Request, res: Response) => {
   const { stat } = req.query;

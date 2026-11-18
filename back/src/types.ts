@@ -94,3 +94,22 @@ export interface TriggerWorkflowProps {
   git_tag: string,
   key_back_url: string | undefined
 }
+
+export interface RetriggerBody {
+  project: string;
+}
+
+export interface RetriggerRun {
+  id: number;
+  name: string;
+  status: string | null;
+  html_url: string;
+  event: string;
+  created_at: string;
+}
+
+export interface RetriggerResponse {
+  project: string;
+  run: RetriggerRun;
+  rerun: 'full';
+}

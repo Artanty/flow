@@ -1,5 +1,6 @@
 const { sendRuntimeErrorToStat } = require('./stat');
 const { WebhookError, validateWebhookConfig, validateSignature, validateTagFormat, validateAndGetNamespaces } = require('./validation');
+const { getOctokit } = require('./github');
 import type { Request, Response } from 'express';
 import type { RuntimeEventPayload, TriggerWorkflowProps, WebhookBody } from './types';
 
@@ -9,16 +10,6 @@ const WEBHOOK_SECRET = process.env.APP_WEBHOOK_SECRET;
 const STAT_URL = process.env.STAT_URL;
 const SAFE_URL = process.env.SAFE_URL;
 const KEY_BACK_URL = process.env.KEY_BACK_URL;
-
-let octokit: any = null;
-
-async function getOctokit() {
-  if (!octokit) {
-    const { Octokit } = await import('@octokit/rest');
-    octokit = new Octokit({ auth: APP_GIT_PAT });
-  }
-  return octokit;
-}
 
 export const pushMasterIgnoredRepos: string[] = [
   'githooklib',
@@ -59,7 +50,9 @@ export const ignoredNamespaces: Record<string, string[]> = {
 
 export async function handleWebhook(req: Request, res: Response): Promise<void> {
   const body = req.body as WebhookBody;
-  const repo_name = body.repository.name;
+  // Must not throw before signature validation: an unauthenticated
+  // `POST /webhook` with `{}` would otherwise crash the whole process.
+  const repo_name = body?.repository?.name ?? 'unknown';
   const eventType = req.headers['x-github-event'] as string;
   const commitMessage = body.head_commit?.message?.trim() || '';
 

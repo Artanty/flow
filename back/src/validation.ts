@@ -44,6 +44,41 @@ export function validateSignature(
   }
 }
 
+export function validateProjectName(project: unknown): asserts project is string {
+  if (typeof project !== 'string' || !/^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/.test(project)) {
+    throw new WebhookError(
+      'Invalid project format',
+      400,
+      { project: typeof project === 'string' ? project : JSON.stringify(project), expectedFormat: 'name@namespace, e.g. noy@back' }
+    );
+  }
+}
+
+export function assertTriggerToken(
+  header: string | undefined,
+  expectedToken: string | undefined
+): void {
+  if (!expectedToken) {
+    throw new WebhookError(
+      'Server misconfiguration: APP_TRIGGER_TOKEN is not set',
+      500,
+      { env: 'APP_TRIGGER_TOKEN' }
+    );
+  }
+
+  const provided = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : '';
+  const expectedBuf = Buffer.from(expectedToken);
+  const providedBuf = Buffer.from(provided);
+
+  const matches =
+    expectedBuf.length === providedBuf.length &&
+    crypto.timingSafeEqual(expectedBuf, providedBuf);
+
+  if (!matches) {
+    throw new WebhookError('Unauthorized', 401, {});
+  }
+}
+
 export function validateTagFormat(tag: string): void {
   if (!/^v\d+\.\d+\.\d+\.\d+\.\d+\.\d+$/.test(tag)) {
     throw new WebhookError(

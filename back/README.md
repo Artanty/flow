@@ -1,4 +1,51 @@
-# OnPush GitHub App 
+# OnPush GitHub App
+
+## API
+
+### POST /retrigger
+
+Re-runs the **latest** workflow run of `Artanty/serf` (`deploy.yml`) whose run name
+matches a project, e.g. `Deploy noy@back | v1.0.4.0.0.0`.
+
+```
+POST /retrigger
+Authorization: Bearer <APP_TRIGGER_TOKEN>   # required
+Content-Type: application/json
+
+{ "project": "noy@back" }
+```
+
+`project` must be `name@namespace` (`chat@web`, `noy@back`, `feat@back`) —
+`/^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/`.
+
+The runs list is scanned newest-first (up to 2000 runs of `deploy.yml`) and the
+first run named `Deploy <project> | …` is re-run with
+`POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun` — same inputs, same
+commit as the original run.
+
+Responses:
+
+| Status | Meaning |
+|---|---|
+| 200 | `{ "project", "run": { "id", "name", "status", "html_url", "event", "created_at" }, "rerun": "full" }` |
+| 400 | invalid `project` format |
+| 401 | missing/wrong `Authorization: Bearer` token |
+| 404 | no run named ``Deploy <project> \| …`` found (`scanned_runs`, `name_prefix` in body) |
+| 409 | latest matching run is still in progress (GitHub rejects reruns of running jobs) |
+| 500 | `APP_TRIGGER_TOKEN` is not configured |
+| 502 | GitHub API failure (`detail` in body; `APP_GIT_PAT` needs `actions: write` on Artanty/serf) |
+
+Required env: `APP_TRIGGER_TOKEN` (secret for this endpoint), `APP_GIT_PAT`
+(unchanged, needs `actions: write`).
+
+```
+curl -X POST https://<host>/retrigger \
+  -H "Authorization: Bearer $APP_TRIGGER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"project":"noy@back"}'
+```
+
+Tests: `npm run build && node test/rerun.test.js` (GitHub client is stubbed).
 
 ## Requirements
 
