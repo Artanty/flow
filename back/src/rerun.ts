@@ -88,7 +88,7 @@ export async function handleRetrigger(req: Request, res: Response): Promise<void
   const [repo_name, namespace] = typeof project === 'string' ? project.split('@') : ['unknown', 'unknown'];
 
   try {
-    assertTriggerToken(req.headers.authorization, process.env.APP_TRIGGER_TOKEN);
+    assertTriggerToken(req.headers.authorization, process.env.APP_TRIGGER_RUN_TOKEN);
     validateProjectName(project);
 
     const { run, scanned } = await findLatestRun(project);

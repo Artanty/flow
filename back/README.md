@@ -9,7 +9,7 @@ matches a project, e.g. `Deploy noy@back | v1.0.4.0.0.0`.
 
 ```
 POST /retrigger
-Authorization: Bearer <APP_TRIGGER_TOKEN>   # required
+Authorization: Bearer <APP_TRIGGER_RUN_TOKEN>   # required
 Content-Type: application/json
 
 { "project": "noy@back" }
@@ -32,15 +32,15 @@ Responses:
 | 401 | missing/wrong `Authorization: Bearer` token |
 | 404 | no run named ``Deploy <project> \| …`` found (`scanned_runs`, `name_prefix` in body) |
 | 409 | latest matching run is still in progress (GitHub rejects reruns of running jobs) |
-| 500 | `APP_TRIGGER_TOKEN` is not configured |
+| 500 | `APP_TRIGGER_RUN_TOKEN` is not configured |
 | 502 | GitHub API failure (`detail` in body; `APP_GIT_PAT` needs `actions: write` on Artanty/serf) |
 
-Required env: `APP_TRIGGER_TOKEN` (secret for this endpoint), `APP_GIT_PAT`
+Required env: `APP_TRIGGER_RUN_TOKEN` (secret for this endpoint), `APP_GIT_PAT`
 (unchanged, needs `actions: write`).
 
 ```
 curl -X POST https://<host>/retrigger \
-  -H "Authorization: Bearer $APP_TRIGGER_TOKEN" \
+  -H "Authorization: Bearer $APP_TRIGGER_RUN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"project":"noy@back"}'
 ```

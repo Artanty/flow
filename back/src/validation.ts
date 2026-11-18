@@ -60,9 +60,9 @@ export function assertTriggerToken(
 ): void {
   if (!expectedToken) {
     throw new WebhookError(
-      'Server misconfiguration: APP_TRIGGER_TOKEN is not set',
+      'Server misconfiguration: APP_TRIGGER_RUN_TOKEN is not set',
       500,
-      { env: 'APP_TRIGGER_TOKEN' }
+      { env: 'APP_TRIGGER_RUN_TOKEN' }
     );
   }
 

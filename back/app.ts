@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 3000;
 app.post('/webhook', handleWebhook);
 
 // Re-runs the latest `Deploy <project> | v...` run of Artanty/serf/deploy.yml.
-// Requires `Authorization: Bearer <APP_TRIGGER_TOKEN>`.
+// Requires `Authorization: Bearer <APP_TRIGGER_RUN_TOKEN>`.
 app.post('/retrigger', handleRetrigger);
 
 app.get('/get-updates', async (req: Request, res: Response) => {
