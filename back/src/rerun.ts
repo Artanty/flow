@@ -1,8 +1,9 @@
 import { sendRuntimeErrorToStat } from './stat';
 import { getOctokit } from './github';
 import { WebhookError, validateProjectName, assertTriggerToken } from './validation';
+import axios from 'axios';
 import type { Request, Response } from 'express';
-import type { RetriggerBody, RetriggerResponse, RetriggerRun, RuntimeEventPayload } from './types';
+import type { RetriggerBody, RetriggerResponse, RetriggerRun, RuntimeEventPayload, StatPayload } from './types';
 
 
 const OWNER = 'Artanty';
@@ -114,6 +115,16 @@ export async function handleRetrigger(req: Request, res: Response): Promise<void
       repo: REPO,
       run_id: run.id,
     });
+
+    // stat run-level marker (not a workflow stage): makes the rerun visible in stat's
+    // run card and moves the run to the top of web/mini lists (last-activity sort)
+    axios.post(`${process.env.STAT_URL}/add-event`, {
+      projectId: `${repo_name}@github`,
+      namespace,
+      stage: 'RETRIGGER',
+      eventData: JSON.stringify({ project, runId: run.id, runName: run.name }),
+      workflowRunId: String(run.id),
+    } as StatPayload).catch((e) => console.error('RETRIGGER stat event failed:', e.message));
 
     const response: RetriggerResponse = {
       project,

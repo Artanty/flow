@@ -16,6 +16,7 @@ export interface StatPayload {
   namespace: string;
   stage: string;
   eventData: string;
+  workflowRunId?: string;
 }
 
 export interface RuntimeEventPayload {
