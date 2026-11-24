@@ -101,7 +101,7 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
 }
 
 export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void> {
-  const { 
+  const {
     namespace,
     repo_name,
     commit_message,
@@ -111,11 +111,55 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
     key_back_url
   } = data;
   console.log('func triggerWorkflow');
+
+  // v2 projects (PRJ_/HST_ env naming, safe@web-enforced) route to serf's deploy_v2.yml.
+  // Retry/timeout duplicated from serf's safe request (http-request-action: retry 5,
+  // retryWait 100, timeout 30000): render can sleep safe@back — the 30s per-attempt
+  // budget rides out the cold start. Fail CLOSED (owner, 2026-11-24): with an unknown
+  // api version we must NOT guess v1 — that could deploy an already-v2 project through
+  // the v1 workflow. Any failure here throws onward to the outer catch → DEPLOY runtime
+  // error to stat, no dispatch.
+  const SAFE_VERSION_RETRIES = 5;
+  const SAFE_VERSION_RETRY_WAIT_MS = 100;
+  const SAFE_VERSION_TIMEOUT_MS = 30_000;
+  let safeVersionResponse: globalThis.Response | null = null;
+  let lastVersionError = 'no attempt made';
+  for (let attempt = 1; attempt <= SAFE_VERSION_RETRIES; attempt++) {
+    try {
+      const r = await fetch(`${safe_url}/api/get-project-safe-api-version`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // DUAL-SEND during the wire transition (projectId -> sourcedName): the currently
+        // deployed safe may still read the legacy field only; both sides ignore the extra.
+        body: JSON.stringify({ sourcedName: `${repo_name}@github`, projectId: `${repo_name}@github`, namespace }),
+        signal: AbortSignal.timeout(SAFE_VERSION_TIMEOUT_MS),
+      });
+      if (r.ok) {
+        safeVersionResponse = r;
+        break;
+      }
+      lastVersionError = `HTTP ${r.status}`;
+    } catch (error) {
+      lastVersionError = (error as Error).message;
+    }
+    if (attempt < SAFE_VERSION_RETRIES) {
+      await new Promise((resolve) => setTimeout(resolve, SAFE_VERSION_RETRY_WAIT_MS));
+    }
+  }
+  if (!safeVersionResponse) {
+    throw new Error(
+      `safe api-version failed after ${SAFE_VERSION_RETRIES} attempts (${lastVersionError}) for ${repo_name}@${namespace}`,
+    );
+  }
+  const versionAnswer = (await safeVersionResponse.json()) as { version?: string };
+  const workflowId = versionAnswer.version === 'v2' ? 'deploy_v2.yml' : 'deploy.yml';
+  console.log(`serf workflow: ${workflowId} (api ${versionAnswer.version ?? 'v1'})`);
+
   try {
     await (await getOctokit()).actions.createWorkflowDispatch({
       owner: 'Artanty',
       repo: 'serf',
-      workflow_id: 'deploy.yml',
+      workflow_id: workflowId,
       ref: 'master',
       inputs: {
         repo_name: repo_name,
