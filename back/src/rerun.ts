@@ -65,6 +65,7 @@ async function findLatestRun(project: string): Promise<LatestRunResult> {
   return { run: null, scanned };
 }
 
+
 function mapGitHubError(error: any, project: string): WebhookError {
   if (error instanceof WebhookError) return error;
 
