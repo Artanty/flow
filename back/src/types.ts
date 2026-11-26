@@ -17,6 +17,11 @@ export interface StatPayload {
   stage: string;
   eventData: string;
   workflowRunId?: string;
+  // Deploy telemetry columns (stat AddEventBody): kebab-case milestone tags
+  // accumulated through the run, and the FLOW_ERROR error flag.
+  steps?: string[];
+  isError?: boolean;
+  commitMessage?: string;
 }
 
 export interface RuntimeEventPayload {
@@ -93,7 +98,31 @@ export interface TriggerWorkflowProps {
   pat: string | undefined,
   safe_url: string | undefined,
   git_tag: string,
-  key_back_url: string | undefined
+  key_back_url: string | undefined,
+  run?: FlowRun,
+  // callback path sets this: a cold safe there must NOT re-defer to noy (loop)
+  skipDefer?: boolean
+}
+
+// noy wake-and-callback replay body (POST /dispatch-callback); token = APP_TRIGGER_RUN_TOKEN
+export interface DispatchCallbackBody {
+  token: string;
+  repo_name: string;
+  namespace: string;
+  git_tag: string;
+  commit_message: string;
+}
+
+// Run-scoped telemetry context (see src/runContext.ts): step tags accumulated
+// through the webhook handling + fork data, flushed to stat as FLOW_* events.
+export interface FlowRun {
+  steps: string[];
+  data: Record<string, unknown>;
+  step: (name: string) => void;
+  note: (key: string, value: unknown) => void;
+  sendStart: () => void;
+  sendEnd: () => void;
+  sendError: (error: unknown) => void;
 }
 
 export interface RetriggerBody {

@@ -1,8 +1,10 @@
 const { sendRuntimeErrorToStat } = require('./stat');
 const { WebhookError, validateWebhookConfig, validateSignature, validateTagFormat, validateAndGetNamespaces } = require('./validation');
 const { getOctokit } = require('./github');
+const { createFlowRun } = require('./runContext');
+const { deferDispatchToNoy } = require('./defer');
 import type { Request, Response } from 'express';
-import type { RuntimeEventPayload, TriggerWorkflowProps, WebhookBody } from './types';
+import type { RuntimeEventPayload, TriggerWorkflowProps, WebhookBody, FlowRun } from './types';
 
 // envs should be added via slave pero in code!
 const APP_GIT_PAT = process.env.APP_GIT_PAT;
@@ -108,7 +110,9 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
     pat,
     safe_url,
     git_tag,
-    key_back_url
+    key_back_url,
+    run,
+    skipDefer
   } = data;
   console.log('func triggerWorkflow');
 
@@ -121,10 +125,27 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
   // error to stat, no dispatch.
   const SAFE_VERSION_RETRIES = 5;
   const SAFE_VERSION_RETRY_WAIT_MS = 100;
-  const SAFE_VERSION_TIMEOUT_MS = 30_000;
+  const SAFE_VERSION_ATTEMPT_TIMEOUT_MS = 30_000;
+  // Total cap across all attempts: the raw worst case (5 x 30s) exceeds any function
+  // maxDuration. Vercel killed the webhook at its DEFAULT 10s on 2026-11-26 (tag
+  // v1.0.42) while attempt 1 was still riding out a safe@render cold start — dispatch
+  // never ran. Owner keeps the 10s default (free tier), so the budget must fit INSIDE
+  // it: ~1.5s prelude + 6s here + ~1s dispatch + short stat telemetry. A cold safe
+  // (render wake 20–60s) now fails CLOSED *visibly* (FLOW_ERROR run in stat) instead
+  // of being killed mid-flight.
+  const SAFE_VERSION_TOTAL_BUDGET_MS = 6_000;
+  const safeVersionDeadline = Date.now() + SAFE_VERSION_TOTAL_BUDGET_MS;
+  const safeVersionStartedAt = Date.now();
+  let safeAttemptsUsed = 0;
   let safeVersionResponse: globalThis.Response | null = null;
   let lastVersionError = 'no attempt made';
   for (let attempt = 1; attempt <= SAFE_VERSION_RETRIES; attempt++) {
+    safeAttemptsUsed = attempt;
+    const remainingMs = safeVersionDeadline - Date.now();
+    if (remainingMs <= 0) {
+      lastVersionError = `total budget of ${SAFE_VERSION_TOTAL_BUDGET_MS}ms exhausted`;
+      break;
+    }
     try {
       const r = await fetch(`${safe_url}/api/get-project-safe-api-version`, {
         method: 'POST',
@@ -132,7 +153,7 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
         // DUAL-SEND during the wire transition (projectId -> sourcedName): the currently
         // deployed safe may still read the legacy field only; both sides ignore the extra.
         body: JSON.stringify({ sourcedName: `${repo_name}@github`, projectId: `${repo_name}@github`, namespace }),
-        signal: AbortSignal.timeout(SAFE_VERSION_TIMEOUT_MS),
+        signal: AbortSignal.timeout(Math.min(SAFE_VERSION_ATTEMPT_TIMEOUT_MS, remainingMs)),
       });
       if (r.ok) {
         safeVersionResponse = r;
@@ -147,13 +168,27 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
     }
   }
   if (!safeVersionResponse) {
+    // noy wake-and-callback: hand the cold start to the always-on noy host — it
+    // wakes safe and POSTs /dispatch-callback to re-run this dispatch. When the
+    // deferral is fired we finish green and report it via telemetry instead of
+    // throwing (the deploy resumes out-of-band). Callback path (skipDefer) and
+    // unconfigured NOY_URL keep the plain fail-closed throw.
+    if (!skipDefer && deferDispatchToNoy({ repo_name, namespace, git_tag, commit_message })) {
+      run?.note('deferred_to_noy', true);
+      run?.sendError(new Error(`safe cold (${lastVersionError}) — dispatch deferred to noy wake-and-callback`));
+      return;
+    }
     throw new Error(
-      `safe api-version failed after ${SAFE_VERSION_RETRIES} attempts (${lastVersionError}) for ${repo_name}@${namespace}`,
+      `safe api-version failed (${lastVersionError}) for ${repo_name}@${namespace}`,
     );
   }
   const versionAnswer = (await safeVersionResponse.json()) as { version?: string };
   const workflowId = versionAnswer.version === 'v2' ? 'deploy_v2.yml' : 'deploy.yml';
   console.log(`serf workflow: ${workflowId} (api ${versionAnswer.version ?? 'v1'})`);
+  run?.step('safe-version');
+  run?.note('safe_api_version', versionAnswer.version ?? 'v1');
+  run?.note('safe_attempts', safeAttemptsUsed);
+  run?.note('safe_ms', Date.now() - safeVersionStartedAt);
 
   try {
     await (await getOctokit()).actions.createWorkflowDispatch({
@@ -173,19 +208,26 @@ export async function triggerWorkflow(data: TriggerWorkflowProps): Promise<void>
       },
     });
     console.log(`by: ${repo_name}@${namespace} | v${git_tag} | ${commit_message}`);
+    run?.step('dispatch');
+    run?.note('workflow_file', workflowId);
+    run?.sendEnd();
   } catch (error) {
     const err = error as Error;
     console.log(err.message);
-    const runtimeErrorPayload: RuntimeEventPayload = {
-      repo_name: repo_name,
-      namespace,
-      stage: 'DEPLOY',
-      commit: commit_message,
-      tag: git_tag,
-      data: { git_tag },
-      error: error
-    };
-    await sendRuntimeErrorToStat(runtimeErrorPayload);
+    if (run) {
+      run.sendError(error);
+    } else {
+      const runtimeErrorPayload: RuntimeEventPayload = {
+        repo_name: repo_name,
+        namespace,
+        stage: 'DEPLOY',
+        commit: commit_message,
+        tag: git_tag,
+        data: { git_tag },
+        error: error
+      };
+      await sendRuntimeErrorToStat(runtimeErrorPayload);
+    }
     console.error(`Error triggering workflow for: ${repo_name}@${namespace}`, error);
   }
 }
@@ -196,6 +238,11 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
   const headCommitMessage = req.body.head_commit.message;
   console.log(req.body)
   const newTag = body.ref.replace('refs/tags/', '');
+
+  // Set when the per-namespace telemetry run is created; the catch below uses it
+  // to flush FLOW_ERROR for failures that triggerWorkflow rethrows (version-check
+  // throw). The dispatch catch inside triggerWorkflow sends its own error.
+  let activeRun: FlowRun | null = null;
 
   try {
     validateTagFormat(newTag);
@@ -215,20 +262,46 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
     const namespaces = validateAndGetNamespaces(newTag, prevTag);
 
     for (const namespace of namespaces) {
-      if (!ignoredNamespaces[repo_name]?.includes(namespace)) {
-        await triggerWorkflow({
-          namespace,
-          repo_name,
-          commit_message: headCommitMessage,
-          pat: APP_GIT_PAT,
-          safe_url: SAFE_URL,
-          git_tag: newTag.replace('v', ''),
-          key_back_url: KEY_BACK_URL
-        });
+      if (ignoredNamespaces[repo_name]?.includes(namespace)) {
+        continue;
       }
+
+      // One telemetry run per namespace (stat runs are keyed by project+namespace).
+      // Prelude tags cover milestones already passed before the namespace was known;
+      // FLOW_START goes out here — the run is visible in stat BEFORE the GitHub
+      // Action exists (no workflowRunId yet, stat renders it as a pre-action run).
+      const run = createFlowRun({
+        repo_name,
+        namespace,
+        tag: newTag.replace('v', ''),
+        commit: headCommitMessage,
+      });
+      for (const preludeStep of [
+        'webhook-received',
+        'signature-verified',
+        'tag-parsed',
+        'prev-tag-resolved',
+        'namespaces-resolved',
+      ]) {
+        run.step(preludeStep);
+      }
+      run.sendStart();
+      activeRun = run;
+
+      await triggerWorkflow({
+        namespace,
+        repo_name,
+        commit_message: headCommitMessage,
+        pat: APP_GIT_PAT,
+        safe_url: SAFE_URL,
+        git_tag: newTag.replace('v', ''),
+        key_back_url: KEY_BACK_URL,
+        run
+      });
     }
     res.status(200).send(`Workflows triggered for: ${namespaces.join(', ')}`);
   } catch (error) {
+    activeRun?.sendError(error);
     const webhookError = error instanceof WebhookError
       ? error
       : new WebhookError('Tag processing error', 500, { tag: newTag });

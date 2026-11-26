@@ -7,6 +7,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { handleWebhook } = require('./src/webhook');
 const { handleRetrigger } = require('./src/rerun');
+const { handleDispatchCallback } = require('./src/callback');
 const {
   sendRuntimeEventToStat,
   startStatInterval,
@@ -29,6 +30,10 @@ app.post('/webhook', handleWebhook);
 // Re-runs the latest `Deploy <project> | v...` run of Artanty/serf/deploy.yml.
 // Requires `Authorization: Bearer <APP_TRIGGER_RUN_TOKEN>`.
 app.post('/retrigger', handleRetrigger);
+
+// noy wake-and-callback landing: replays a dispatch deferred because safe@render
+// was cold (token travels in the body, set by src/defer.ts).
+app.post('/dispatch-callback', handleDispatchCallback);
 
 app.get('/get-updates', async (req: Request, res: Response) => {
   const { stat } = req.query;
