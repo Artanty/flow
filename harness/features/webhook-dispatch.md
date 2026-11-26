@@ -13,8 +13,10 @@ non-ignored namespace: version-check gate (`version-check.md`) → dispatch
 master) with inputs `{repo_name, commit_message, pat, safe_url, stat_url,
 git_tag, key_back_url}` → stat telemetry per namespace (`flow-telemetry.md`).
 
-Lists: `pushMasterIgnoredRepos` (repos deployed per-commit, not per-tag —
-historical, other services' concern) and `ignoredNamespaces` (e.g. `faq: [web]`).
+Lists: `pushMasterIgnoredRepos` (repos that must never auto-deploy — serf
+would self-deploy on its own tags; gates the tag path since 2026-11-27, was
+accidentally un-gated 2025-03…2026-11) and `ignoredNamespaces`
+(e.g. `faq: [web]`).
 
 Decisions:
 - Errors before the namespace is known (signature, tag format) → old-style

@@ -3,6 +3,21 @@
 Plan → result, newest first. Distill old sessions into `harness/features/`
 and `harness/core/` when this grows.
 
+## 2026-11-27 (4) — serf tag push self-deploy (blacklist lost from tag path)
+
+- **Why**: owner pushed serf and a serf deploy run appeared in serf's own
+  Actions tab. `pushMasterIgnoredRepos` (contains 'serf') had not gated the
+  TAG path since the 2025-03 e0f9c31 rename — the check moved to the
+  master-push branch only (deleted later in 5eaaeff), leaving the list
+  exported-but-unused and every serf version tag dispatching serf's own
+  deploy. Self-deploy loop risk, plus stray runs since March 2025.
+- **Fix**: `handleTag` returns `200 "Repo <name> is blacklisted from tag
+  deploys"` for `pushMasterIgnoredRepos` members BEFORE the namespace loop
+  (no flow telemetry run created). Explicit `workflow_dispatch` triggers
+  from the Actions UI stay unaffected (they bypass flow).
+- **Status**: done; `tsc` clean, build + rerun test green. NOT committed —
+  needs flow -d.
+
 ## 2026-11-27 (3) — noy wake-and-callback (cold-safe recovery)
 
 - Owner picked the noy wake-and-callback option (thru rejected: synchronous —

@@ -261,6 +261,16 @@ async function handleTag(req: Request, res: Response, repo_name: string): Promis
 
     const namespaces = validateAndGetNamespaces(newTag, prevTag);
 
+    // tag blacklist: these repos must never self-deploy on a version tag — serf
+    // deploying serf is a self-referential loop (the dispatch would re-tag and
+    // re-trigger). Historically this gate existed on the tag path, was lost in
+    // the 2025-03 e0f9c31 rename (it moved to the master-push branch only) and
+    // resurfaced 2026-11-27 when a serf tag push dispatched serf's own deploy.
+    if (pushMasterIgnoredRepos.includes(repo_name)) {
+      res.status(200).send(`Repo ${repo_name} is blacklisted from tag deploys`);
+      return;
+    }
+
     for (const namespace of namespaces) {
       if (ignoredNamespaces[repo_name]?.includes(namespace)) {
         continue;
