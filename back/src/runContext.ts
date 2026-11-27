@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { fireNoyWakeAndCall } from './defer';
 import type { StatPayload, FlowRun } from './types';
 
 // Serf-style run telemetry (deploy_v2.yml MASTER_START/END/ERROR mechanics), ported
@@ -59,7 +60,18 @@ export function createFlowRun(props: {
     axios
       .post(`${process.env.STAT_URL}/add-event`, payload, { timeout: STAT_SEND_TIMEOUT_MS })
       .then(() => console.log(`FLOW ${stage} -> @stat: ${repo_name}@${namespace} | v${tag} | steps: ${run.steps.join(',') || '-'}`))
-      .catch((e: unknown) => console.error(`FLOW ${stage} stat send failed (ignored):`, (e as Error).message));
+      .catch((e: unknown) => {
+        // stat@render can be cold together with safe (same free tier) — the direct
+        // 3s send times out and the run would leave NO trace. Fallback: noy wakes
+        // stat and replays the event itself (callback = stat's /add-event, no auth
+        // there, body = the plain payload). Fire-and-forget, same as the direct send.
+        console.error(`FLOW ${stage} stat send failed:`, (e as Error).message);
+        const statUrl = process.env.STAT_URL!;
+        const sentViaNoy = fireNoyWakeAndCall(`FLOW ${stage} viaNoy`, statUrl, `${statUrl}/add-event`, JSON.stringify(payload));
+        if (!sentViaNoy) {
+          console.error(`FLOW ${stage} noy fallback skipped (NOY_URL not configured) — event lost`);
+        }
+      });
   }
 
   return run;

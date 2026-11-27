@@ -21,7 +21,13 @@ latency, workflow file); sends go to `POST {STAT_URL}/add-event`:
 Payload: `{projectId: '<repo>@github', namespace, stage, eventData: JSON
 {tag, commit, …data}, steps, isError, commitMessage}`. Sends are
 fire-and-forget, 3s axios timeout — telemetry never blocks the deploy nor eats
-the 10s budget.
+the 10s budget. When the direct send fails (stat@render cold — it can sleep
+together with safe on the same free tier), the event falls back to
+`fireNoyWakeAndCall` (src/defer.ts): noy wakes stat and replays the payload to
+`{STAT_URL}/add-event` itself (no auth there). Caveat: replayed events can land
+out of order when several are deferred at once — stat groups by insert id,
+usually irrelevant at these scales. Needs `NOY_URL` set (same env as
+`deferred-dispatch.md`).
 
 stat merges FLOW groups into the earliest subsequent run of the same
 project+namespace at read time (event-id monotonic); orphans stay provisional

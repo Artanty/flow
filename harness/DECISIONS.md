@@ -3,6 +3,19 @@
 Plan → result, newest first. Distill old sessions into `harness/features/`
 and `harness/core/` when this grows.
 
+## 2026-11-27 (5) — stat telemetry noy fallback
+
+- Live log: `FLOW_START stat send failed (ignored): timeout of 3000ms exceeded`
+  (stat@render cold together with safe, same free tier) → run invisible in stat.
+  runContext sends now fall back to `fireNoyWakeAndCall` (new shared helper in
+  src/defer.ts; deferDispatchToNoy refactored onto it) on any direct-send
+  failure: noy wakes stat and replays the payload to {STAT_URL}/add-event
+  itself — no flow callback needed, /add-event has no auth. Caveat: replayed
+  events may land out of order when several are deferred at once (stat groups
+  by insert id). tsc + rerun tests green. NOT committed. Still pending from
+  (3): NOY_URL + FLOW_URL not set in Vercel → deferral AND this fallback are
+  both inert until configured; v0.1.45 was lost (redeliver after configuring).
+
 ## 2026-11-27 (4) — serf tag push self-deploy (blacklist lost from tag path)
 
 - **Why**: owner pushed serf and a serf deploy run appeared in serf's own
