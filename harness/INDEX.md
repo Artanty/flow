@@ -25,6 +25,9 @@ Layers (load only what a task needs):
 ## incidents/
 - `26-11-27_vercel-10s-kill-safe-cold-start.md` — lost deploy v1.0.42 (silent kill).
 
+## tasks/
+- `trigger-last-build-api.md` — queued: rerun-last-build API with key@back auth.
+
 ## Cross-project
 Shared rules (DECISIONS workflow, git/commits, naming):
 `/Users/artyomantoshkin/server/know/entries/rules.md`.
